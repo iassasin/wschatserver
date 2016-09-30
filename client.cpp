@@ -1,6 +1,5 @@
 #include "client.hpp"
 #include "server.hpp"
-#include "proto.hpp"
 #include "algo.hpp"
 #include "packet.hpp"
 #include "packets.hpp"

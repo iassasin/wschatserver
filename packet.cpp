@@ -1,7 +1,7 @@
 #include <exception>
+#include <string>
 #include "packet.hpp"
 #include "packets.hpp"
-#include "proto.hpp"
 
 Packet::Packet(){
 	type = Type::bad;
@@ -11,14 +11,16 @@ Packet::~Packet(){
 	
 }
 
-Packet *Packet::read(const string &data){
-	ProtoObject obj = ProtoStream::deserialize(data);
-	if (obj["type"].type == ProtoObject::Type::null){
+Packet *Packet::read(const std::string &data){
+	Json::Value obj;
+	Json::Reader jreader;
+
+	if (!jreader.parse(data, obj)){
 		return nullptr;
 	}
 	
 	Packet *pack = nullptr;
-	switch ((Type) (int) obj["type"]){
+	switch ((Type) obj["type"].asInt()){
 		case Type::bad:					pack = new PacketBad(); break;
 		case Type::system:				pack = new PacketSystem(); break;
 		case Type::message:				pack = new PacketMessage(); break;
@@ -29,7 +31,7 @@ Packet *Packet::read(const string &data){
 	if (pack){
 		try {
 			pack->deserialize(obj);
-		} catch (std::out_of_range e) {
+		} catch (std::out_of_range &e) {
 			delete pack;
 			pack = nullptr;
 		}

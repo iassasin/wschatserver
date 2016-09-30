@@ -21,6 +21,7 @@ public:
 	Client(Server *srv, shared_ptr<SocketServerBase<WS>::Connection> conn){
 		server = srv;
 		connection = conn;
+		uid = -1;
 	}
 	
 	~Client(){
@@ -40,6 +41,10 @@ public:
 	void onDisconnect();
 	
 	void sendPacket(const Packet &);
+
+	bool isAdmin(){
+		return uid == 1 || uid == 2;
+	}
 };
 
 #define CLIENT_CLASS_DEFINED

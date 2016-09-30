@@ -3,7 +3,6 @@
 #include <time.h>
 #include <regex>
 
-#include "proto.hpp"
 #include "algo.hpp"
 #include "client.hpp"
 #include "server.hpp"
@@ -41,8 +40,9 @@ Server::Server(int port)
 	};
 	
 	chat.onerror = [&](auto connection, const boost::system::error_code& ec) {
-	    cout << date("[%H:%M:%S] ") << "Server: Error in connection " << (size_t)connection.get() << ". " << 
-	            "Error: " << ec << ", error message: " << ec.message() << endl;
+		cout << date("[%H:%M:%S] ") << "Server: Error in connection " << (size_t)connection.get() << ". " <<
+				"Error: " << ec << ", error message: " << ec.message() << endl;
+		clients[connection]->onDisconnect();
 		clients.erase(connection);
 	};
 	
@@ -66,14 +66,16 @@ void Server::sendRawData(shared_ptr<SocketServerBase<WS>::Connection> conn, cons
 }
 
 void Server::sendPacket(shared_ptr<SocketServerBase<WS>::Connection> conn, const Packet &pack){
+	Json::FastWriter wr;
 	stringstream response_ss;
-	response_ss << ProtoStream::serialize(pack.serialize());
+	response_ss << wr.write(pack.serialize());
 	server.send(conn, response_ss);
 }
 
 void Server::sendPacketToAll(const Packet &pack){
+	Json::FastWriter wr;
 	stringstream response_ss;
-	string spack = ProtoStream::serialize(pack.serialize());
+	string spack = wr.write(pack.serialize());
 	if (pack.type == Packet::Type::message)
 		addToHistory(spack);
 	response_ss << spack;

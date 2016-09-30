@@ -3,11 +3,14 @@
 
 #include "packet.hpp"
 #include <ctime>
+#include <vector>
+
+using std::vector;
 
 class PacketBad : public Packet {
 public:
-	virtual void deserialize(const ProtoObject &){}
-	virtual ProtoObject serialize() const { return ProtoObject(); }
+	virtual void deserialize(const Json::Value &){}
+	virtual Json::Value serialize() const { return Json::Value(); }
 	virtual void process(Client &){}
 };
 
@@ -21,8 +24,8 @@ public:
 	PacketSystem(const string &msg);
 	virtual ~PacketSystem();
 	
-	virtual void deserialize(const ProtoObject &);
-	virtual ProtoObject serialize() const;
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
 	virtual void process(Client &);
 };
 
@@ -38,8 +41,8 @@ public:
 	PacketMessage(const string &log, const string &msg, const time_t &tm = 0);
 	virtual ~PacketMessage();
 	
-	virtual void deserialize(const ProtoObject &);
-	virtual ProtoObject serialize() const;
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
 	virtual void process(Client &);
 };
 
@@ -53,8 +56,8 @@ public:
 	PacketOnlineList(Client &client);
 	virtual ~PacketOnlineList();
 	
-	virtual void deserialize(const ProtoObject &);
-	virtual ProtoObject serialize() const;
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
 	virtual void process(Client &);
 };
 
@@ -67,8 +70,8 @@ public:
 	PacketAuth();
 	virtual ~PacketAuth();
 	
-	virtual void deserialize(const ProtoObject &);
-	virtual ProtoObject serialize() const;
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
 	virtual void process(Client &);
 };
 
@@ -86,8 +89,8 @@ public:
 	PacketStatus(const string &nm, Status stat, const string &nname = "");
 	virtual ~PacketStatus();
 	
-	virtual void deserialize(const ProtoObject &);
-	virtual ProtoObject serialize() const;
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
 	virtual void process(Client &);
 };
 

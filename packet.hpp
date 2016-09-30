@@ -1,7 +1,10 @@
 #ifndef PACKET_H_
 #define PACKET_H_
 
-#include "proto.hpp"
+#include <string>
+#include <jsoncpp/json/json.h>
+
+using std::string;
 
 #ifndef CLIENT_CLASS_DEFINED
 class Client;
@@ -20,8 +23,8 @@ public:
 	
 	static Packet *read(const string &data);
 	
-	virtual void deserialize(const ProtoObject &) = 0;
-	virtual ProtoObject serialize() const = 0;
+	virtual void deserialize(const Json::Value &) = 0;
+	virtual Json::Value serialize() const = 0;
 	virtual void process(Client &) = 0;
 };
 

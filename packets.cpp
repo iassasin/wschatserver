@@ -1,7 +1,6 @@
 #include "packets.hpp"
 #include "client.hpp"
 #include "algo.hpp"
-#include "proto.hpp"
 #include "server.hpp"
 #include <cstdlib>
 #include <memory>
@@ -9,25 +8,14 @@
 
 using namespace sql;
 
-template<typename T>
-static string toString(const T &t){
-	std::ostringstream str;
-	str << t;
-	return str.str();
-}
-
-static int64_t toLong(string str){
-	return atoll(str.c_str());
-}
-
 PacketSystem::PacketSystem(){ type = Type::system; }
 PacketSystem::PacketSystem(const string &msg) : message(msg){ type = Type::system; }
 PacketSystem::~PacketSystem(){}
 
-void PacketSystem::deserialize(const ProtoObject &obj){}
+void PacketSystem::deserialize(const Json::Value &obj){}
 
-ProtoObject PacketSystem::serialize() const {
-	ProtoObject obj;
+Json::Value PacketSystem::serialize() const {
+	Json::Value obj;
 	obj["type"] = (int) type;
 	obj["message"] = message;
 	return obj;
@@ -39,6 +27,7 @@ void PacketSystem::process(Client &client){}
 
 PacketMessage::PacketMessage(){
 	type = Type::message;
+	msgtime = 0;
 }
 
 PacketMessage::PacketMessage(const string &log, const string &msg, const time_t &tm) : PacketMessage(){
@@ -51,16 +40,16 @@ PacketMessage::~PacketMessage(){
 
 }
 
-void PacketMessage::deserialize(const ProtoObject &obj){
-	message = (string) obj["message"];
-	login = (string) obj["login"];
-	msgtime = toLong((string) obj["time"]);
+void PacketMessage::deserialize(const Json::Value &obj){
+	message = obj["message"].asString();
+	login = obj["login"].asString();
+	msgtime = obj["time"].asUInt64();
 }
 
-ProtoObject PacketMessage::serialize() const {
-	ProtoObject obj;
+Json::Value PacketMessage::serialize() const {
+	Json::Value obj;
 	obj["type"] = (int) type;
-	obj["time"] = toString(msgtime);
+	obj["time"] = (Json::UInt64) msgtime;
 	obj["login"] = login;
 	if (message.size() > 30000){
 		obj["message"] = string(message, 0, 30000);
@@ -94,6 +83,15 @@ void PacketMessage::process(Client &client){
 			pack.message = "Ник должен содержать только латинские буквоцифры и _-, и не длинее 24 символов";
 			client.sendPacket(pack);
 		}
+	} else if (startsWith(message, "/kick ") && client.isAdmin()){
+		string nick = regex_split(message, regex(" +"), 2)[1];
+		auto cli = server->getClientByName(nick);
+		if (cli){
+			server->kick(cli);
+		} else {
+			pack.message = "Такой пользователь не найден";
+			client.sendPacket(pack);
+		}
 	} else {
 		if (client.getName().empty()){
 			pack.message = "Перед началом общения укажите свой ник: /nick MyNick";
@@ -118,12 +116,12 @@ PacketOnlineList::~PacketOnlineList(){
 
 }
 
-void PacketOnlineList::deserialize(const ProtoObject &obj){
+void PacketOnlineList::deserialize(const Json::Value &obj){
 
 }
 
-ProtoObject PacketOnlineList::serialize() const {
-	ProtoObject list;
+Json::Value PacketOnlineList::serialize() const {
+	Json::Value list;
 	list["type"] = (int) type;
 	int i = 0;
 	for (string n : clients){
@@ -147,12 +145,12 @@ PacketAuth::~PacketAuth(){
 
 }
 
-void PacketAuth::deserialize(const ProtoObject &obj){
-	ukey = (string) obj["ukey"];
+void PacketAuth::deserialize(const Json::Value &obj){
+	ukey = obj["ukey"].asString();
 }
 
-ProtoObject PacketAuth::serialize() const {
-	ProtoObject obj;
+Json::Value PacketAuth::serialize() const {
+	Json::Value obj;
 	obj["type"] = (int) type;
 	obj["ukey"] = ukey;
 	return obj;
@@ -194,6 +192,7 @@ void PacketAuth::process(Client &client){
 
 PacketStatus::PacketStatus(){
 	type = Type::status;
+	status = Status::bad;
 }
 
 PacketStatus::PacketStatus(const string &nm, Status stat, const string &nname)
@@ -208,14 +207,14 @@ PacketStatus::~PacketStatus(){
 
 }
 
-void PacketStatus::deserialize(const ProtoObject &obj){
-	status = (Status) (int) obj["status"];
-	name = (string) obj["name"];
-	data = (string) obj["data"];
+void PacketStatus::deserialize(const Json::Value &obj){
+	status = (Status) obj["status"].asInt();
+	name = obj["name"].asString();
+	data = obj["data"].asString();
 }
 
-ProtoObject PacketStatus::serialize() const {
-	ProtoObject obj;
+Json::Value PacketStatus::serialize() const {
+	Json::Value obj;
 	obj["type"] = (int) type;
 	obj["status"] = (int) status;
 	obj["name"] = name;
