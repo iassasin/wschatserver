@@ -9,6 +9,7 @@
 #include <cppconn/exception.h>
 #include <memory>
 #include <string>
+#include "config.hpp"
 
 using std::string;
 using std::unique_ptr;
@@ -30,7 +31,8 @@ public:
 	
 	void reconnect(){
 		sql::mysql::MySQL_Driver driver;
-		conn = unique_ptr<sql::Connection>(driver.connect("tcp://localhost:3306", "www", ""));
+		auto dbconf = config["database"];
+		conn = unique_ptr<sql::Connection>(driver.connect(dbconf["host"].asString(), dbconf["user"].asString(), dbconf["password"].asString()));
 		init();
 	}
 	

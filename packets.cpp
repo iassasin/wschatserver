@@ -157,7 +157,7 @@ Json::Value PacketAuth::serialize() const {
 }
 
 void PacketAuth::process(Client &client){
-	auto &cache = client.getServer()->getMemcache();
+	Memcache cache;
 	Database db;
 	auto srv = client.getServer();
 	
@@ -168,7 +168,6 @@ void PacketAuth::process(Client &client){
 		auto cli = srv->getClientByID(uid);
 		if (cli){
 			srv->kick(cli);
-			//client.sendPacket(PacketSystem("Вы уже залогинены в чате!"));
 		}
 
 		try {

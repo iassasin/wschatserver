@@ -14,7 +14,6 @@ class Server {
 private:
 	map<shared_ptr<SocketServerBase<WS>::Connection>, shared_ptr<Client> > clients;
 	SocketServer<WS> server;
-	Memcache cache;
 	
 	list<string> pack_history;
 	
@@ -33,7 +32,6 @@ public:
 	shared_ptr<Client> getClientByID(int uid);
 	
 	vector<string> getClients();
-	Memcache &getMemcache(){ return cache; } //TODO: переделать как Database
 };
 
 #define SERVER_CLASS_DEFINED

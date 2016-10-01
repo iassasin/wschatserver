@@ -1,7 +1,7 @@
 #include "server.hpp"
 
 int main() {
-	Server server(8080);
+	Server server(config["port"].asInt());
     server.start();
     
     return 0;

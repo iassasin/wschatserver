@@ -9,8 +9,10 @@
 #include "packets.hpp"
 
 Server::Server(int port)
-	: server(port, 1), cache("localhost", 11211)
+	: server(port, 1)
 {
+	cout << "Started wsserver at port " << port << endl;
+
 	auto& chat = server.endpoint["^/chat/?$"];
 	
 	chat.onmessage = [&](auto connection, auto message) {
