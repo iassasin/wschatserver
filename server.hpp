@@ -25,7 +25,7 @@ public:
 	
 	void start();
 	
-	void kick(shared_ptr<Client> client){ server.send_close(client->getConnection(), 0); }
+	void kick(shared_ptr<Client> client);
 	void sendPacket(shared_ptr<SocketServerBase<WS>::Connection> conn, const Packet &);
 	void sendPacketToAll(const Packet &);
 	

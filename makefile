@@ -12,7 +12,8 @@ all: $(APP)
 	strip $(APP)
 
 debug: CPPFLAGS = -D_DEBUG_ -Wall -g3 -std=c++1y
-debug: $(APP)
+debug: $(OBJECTS)
+	$(LINK.o) $^ $(LDLIBS) -o $(APP)
 
 clean:
 	rm -f $(APP) $(OBJECTS)

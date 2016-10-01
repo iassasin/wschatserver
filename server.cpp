@@ -9,19 +9,24 @@
 #include "packets.hpp"
 
 Server::Server(int port)
-	: server(port, 2), cache("localhost", 11211)
+	: server(port, 1), cache("localhost", 11211)
 {
 	auto& chat = server.endpoint["^/chat/?$"];
 	
 	chat.onmessage = [&](auto connection, auto message) {
 	    stringstream data_ss;
 	    message->data >> data_ss.rdbuf();
-	    clients[connection]->onPacket(data_ss.str());
+
+	    if (clients.find(connection) != clients.end()){
+	    	clients[connection]->onPacket(data_ss.str());
+	    }
 	};
 	
 	chat.onopen = [&, this](auto connection) {
-	    cout << date("[%H:%M:%S] ") << "Server: Opened connection " << (size_t)connection.get() << endl;
-	    shared_ptr<Client> cli(new Client(this, connection));
+	    cout << date("[%H:%M:%S] ") << "Server: Opened connection #" << (size_t)connection.get()
+	    		<< " (" << connection->remote_endpoint_address.to_string() << ")" << endl;
+
+	    shared_ptr<Client> cli = make_shared<Client>(this, connection);
 	    clients[connection] = cli;
 	    
 	    for (auto &v : pack_history){
@@ -34,16 +39,24 @@ Server::Server(int port)
 	};
 	
 	chat.onclose = [&](auto connection, int status, const string& reason) {
-	    cout << date("[%H:%M:%S] ") << "Server: Closed connection " << (size_t)connection.get() << " with status code " << status << endl;
-	    clients[connection]->onDisconnect();
-	    clients.erase(connection);
+	    cout << date("[%H:%M:%S] ") << "Server: Closed connection #" << (size_t)connection.get()
+	    		<< " (" << connection->remote_endpoint_address.to_string() << ")" << " with status code " << status << endl;
+
+	    if (clients.find(connection) != clients.end()){
+			clients[connection]->onDisconnect();
+			clients.erase(connection);
+	    }
 	};
 	
 	chat.onerror = [&](auto connection, const boost::system::error_code& ec) {
-		cout << date("[%H:%M:%S] ") << "Server: Error in connection " << (size_t)connection.get() << ". " <<
-				"Error: " << ec << ", error message: " << ec.message() << endl;
-		clients[connection]->onDisconnect();
-		clients.erase(connection);
+		cout << date("[%H:%M:%S] ") << "Server: Error in connection #" << (size_t)connection.get()
+				<< " (" << connection->remote_endpoint_address.to_string() << "). "
+				<< "Error: " << ec << ", error message: " << ec.message() << endl;
+
+		if (clients.find(connection) != clients.end()){
+			clients[connection]->onDisconnect();
+			clients.erase(connection);
+		}
 	};
 	
 }
@@ -112,5 +125,12 @@ vector<string> Server::getClients(){
 		}
 	}
 	return res;
+}
+
+void Server::kick(shared_ptr<Client> client){
+	auto conn = client->getConnection();
+	clients.erase(conn);
+	client->onDisconnect();
+	server.send_close(conn, 0);
 }
 

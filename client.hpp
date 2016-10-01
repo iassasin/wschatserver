@@ -31,6 +31,8 @@ public:
 	string getName(){ return name; }
 	void setName(string nm){ name = nm; }
 	
+	string getIP(){ return connection->remote_endpoint_address.to_string(); }
+
 	int getID(){ return uid; }
 	void setID(int id){ uid = id; }
 	
