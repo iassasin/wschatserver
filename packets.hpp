@@ -40,9 +40,11 @@ public:
 	string target;
 	string login;
 	string message;
+	bool isprivate;
 
 	PacketMessage();
-	PacketMessage(const string &targ, const string &log, const string &msg, const time_t &tm = 0);
+	PacketMessage(const string &targ, const string &log, const string &msg) : PacketMessage(targ, log, msg, time(nullptr)){};
+	PacketMessage(const string &targ, const string &log, const string &msg, const time_t &tm);
 	virtual ~PacketMessage();
 	
 	virtual void deserialize(const Json::Value &);

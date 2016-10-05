@@ -10,6 +10,7 @@
 
 using namespace sql;
 using namespace sinlib;
+using std::regex;
 
 PacketSystem::PacketSystem(){ type = Type::system; }
 PacketSystem::PacketSystem(const string &targ, const string &msg) :  target(targ), message(msg){ type = Type::system; }
@@ -32,6 +33,7 @@ void PacketSystem::process(Client &client){}
 PacketMessage::PacketMessage(){
 	type = Type::message;
 	msgtime = 0;
+	isprivate = false;
 }
 
 PacketMessage::PacketMessage(const string &targ, const string &log, const string &msg, const time_t &tm) : PacketMessage(){
@@ -39,6 +41,7 @@ PacketMessage::PacketMessage(const string &targ, const string &log, const string
 	target = targ;
 	message = msg;
 	msgtime = tm;
+	isprivate = false;
 }
 
 PacketMessage::~PacketMessage(){
@@ -58,6 +61,7 @@ Json::Value PacketMessage::serialize() const {
 	obj["target"] = target;
 	obj["time"] = (Json::UInt64) msgtime;
 	obj["login"] = login;
+	obj["pm"] = isprivate;
 	if (message.size() > 30000){
 		obj["message"] = string(message, 0, 30000);
 	} else {
@@ -67,9 +71,7 @@ Json::Value PacketMessage::serialize() const {
 }
 
 void PacketMessage::process(Client &client){
-	auto server = client.getServer();
-
-	if (!target.empty()){
+	if (!target.empty() && !message.empty()){
 		auto room = client.getRoomByName(target);
 
 		if (!room){
@@ -91,43 +93,106 @@ void PacketMessage::process(Client &client){
 
 bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string &msg){
 	auto client = member->getClient();
-	PacketSystem pack;
-	pack.target = room->getName();
+	PacketSystem syspack;
+	syspack.target = room->getName();
 
-	if (startsWith(msg, "/nick ")){
-		string nick = regex_split(msg, regex(" +"), 2)[1];
-		cout << date("[%H:%M:%S] INFO: login = ") << nick << endl;
-		if (regex_match(nick, regex("^([a-zA-Z0-9-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
-			if (room->findMemberByNick(nick)){
-				pack.message = "Такой ник уже занят";
-				client->sendPacket(pack);
-			} else {
-				string oldnick = member->getNick();
-				member->setNick(nick);
-
-				PacketStatus spack(room, member);
-				if (!oldnick.empty()){
-					spack.status = Member::Status::nick_change;
-					spack.data = oldnick;
-				}
-
-				room->sendPacketToAll(spack);
-			}
-		} else {
-			pack.message = "Ник должен содержать только латинские буквоцифры и _-, и не длинее 24 символов";
-			client->sendPacket(pack);
-		}
-	} else if (startsWith(msg, "/kick ") && client->isAdmin()){
-		string nick = regex_split(msg, regex(" +"), 2)[1];
-		auto m = room->findMemberByNick(nick);
-		if (m){
-			room->kickMember(m);
-		} else {
-			pack.message = "Такой пользователь не найден";
-			client->sendPacket(pack);
-		}
-	} else {
+	if (msg[0] != '/'){
 		return false;
+	}
+
+	bool badcmd = true;
+
+	regex_parser parser(msg);
+	regex r_cmd("^/([^\\s]+)");
+	regex r_spaces("^\\s+");
+	regex r_to_end("^.+$");
+	regex r_to_space("^[^\\s]+");
+
+	if (parser.next(r_cmd)){
+		badcmd = false;
+		string cmd;
+		parser >> cmd;
+		parser.next(r_spaces);
+
+		if (cmd == "help"){
+			syspack.message = "Доступные команды:\n"
+					"/help\tвсе понятно\n"
+					"/nick <новый ник>\tсменить ник\n"
+					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функия тестовая)";
+			client->sendPacket(syspack);
+		}
+		else if (cmd == "nick"){
+			string nick;
+			if (parser.next(r_to_end)){
+				parser.read(0, nick);
+			}
+
+			cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << client->getIP() << ")" << endl;
+			if (regex_match(nick, regex("^([a-zA-Z0-9-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
+				if (room->findMemberByNick(nick)){
+					syspack.message = "Такой ник уже занят";
+					client->sendPacket(syspack);
+				} else {
+					string oldnick = member->getNick();
+					member->setNick(nick);
+
+					PacketStatus spack(room, member);
+					if (!oldnick.empty()){
+						spack.status = Member::Status::nick_change;
+						spack.data = oldnick;
+					}
+
+					room->sendPacketToAll(spack);
+				}
+			} else {
+				syspack.message = "Ник должен содержать только латинские буквоцифры и _-, и не длинее 24 символов";
+				client->sendPacket(syspack);
+			}
+		}
+		else if (cmd == "kick" && client->isAdmin()){
+			string nick;
+			if (parser.next(r_to_end)){
+				parser.read(0, nick);
+			}
+
+			auto m = room->findMemberByNick(nick);
+			if (m){
+				room->kickMember(m);
+			} else {
+				syspack.message = "Такой пользователь не найден";
+				client->sendPacket(syspack);
+			}
+		}
+		else if (cmd == "msg"){
+			string nick;
+			if (parser.next(r_to_space)){
+				parser.read(0, nick);
+			}
+			
+			string smsg;
+			if (parser.next(r_spaces) && parser.next(r_to_end)){
+				parser.read(0, smsg);
+			}
+			
+			auto m2 = room->findMemberByNick(nick);
+			if (!m2){
+				syspack.message = "Указанный пользователь не найден";
+			} else {
+				PacketMessage pmsg(target, member->getNick(), smsg);
+				pmsg.isprivate = true;
+
+				client->sendPacket(pmsg);
+				m2->getClient()->sendPacket(pmsg);
+			}
+		}
+		else {
+			badcmd = true;
+		}
+	}
+
+	if (badcmd){
+		syspack.message = "Такая команда не существует";
+		client->sendPacket(syspack);
 	}
 
 	return true;
@@ -165,8 +230,10 @@ void PacketOnlineList::process(Client &client){
 	list.clear();
 	auto members = room->getMembers();
 	for (MemberPtr m : members){
-		PacketStatus pack(room, m);
-		list.append(pack.serialize());
+		if (!m->getNick().empty()){
+			PacketStatus pack(room, m);
+			list.append(pack.serialize());
+		}
 	}
 
 	client.sendPacket(*this);
@@ -315,9 +382,10 @@ void PacketJoin::process(Client &client){
 			client.sendRawData(s);
 		}
 
-		room->sendPacketToAll(PacketStatus(room, member));
 		if (member->getNick().empty()){
 			client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
+		} else {
+			room->sendPacketToAll(PacketStatus(room, member));
 		}
 	}
 }
