@@ -23,10 +23,15 @@ private:
 	set<RoomPtr> rooms;
 	weak_ptr<Client> self;
 public:
+	time_t lastMessageTime;
+	int messageCounter;
+
 	Client(Server *srv, shared_ptr<SocketServerBase<WS>::Connection> conn){
 		server = srv;
 		connection = conn;
 		uid = -1;
+		lastMessageTime = time(nullptr);
+		messageCounter = 0;
 	}
 	
 	~Client(){
@@ -49,6 +54,7 @@ public:
 	
 	void onPacket(string pack);
 	void onDisconnect();
+	void onKick(RoomPtr room);
 	
 	MemberPtr joinRoom(RoomPtr room);
 	void leaveRoom(RoomPtr room);

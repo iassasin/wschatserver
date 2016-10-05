@@ -21,7 +21,6 @@ private:
 	SocketServer<WS> server;
 
 	set<RoomPtr> rooms;
-	
 public:
 	Server(int port);
 	

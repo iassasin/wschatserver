@@ -1,8 +1,23 @@
 #include "rooms.hpp"
+#include "packets.hpp"
 #include <ctime>
 
-inline void Member::sendPacket(const Packet &pack){
+void Member::sendPacket(const Packet &pack){
 	client->sendPacket(pack);
+}
+
+void Member::setNick(const string &nnick){
+	string oldnick = nick;
+	nick = nnick;
+	auto roomp = room.lock();
+
+	PacketStatus spack(roomp, self.lock());
+	if (!oldnick.empty()){
+		spack.status = Member::Status::nick_change;
+		spack.data = oldnick;
+	}
+
+	roomp->sendPacketToAll(spack);
 }
 
 Room::Room(Server *srv){
@@ -61,14 +76,26 @@ void Room::setOwner(uint nid){
 }
 
 MemberPtr Room::addMember(ClientPtr user){
-	if (findMemberByClient(user)){
-		return nullptr;
+	string nick = user->getName();
+
+	if (!nick.empty()){
+		auto member = findMemberByNick(nick);
+		if (member){
+			kickMember(member);
+		}
 	}
 
-	auto m = make_shared<Member>(user);
-	m->setNick(user->getName());
+	auto ptr = self.lock();
+	auto m = make_shared<Member>(ptr, user);
+	m->setSelfPtr(m);
+	m->nick = user->getName();
 
 	auto res = members.insert(m);
+
+	if (!m->getNick().empty()){
+		sendPacketToAll(PacketStatus(ptr, m, Member::Status::online));
+	}
+
 	if (res.second){
 		return *res.first;
 	}
@@ -78,6 +105,9 @@ MemberPtr Room::addMember(ClientPtr user){
 
 bool Room::removeMember(ClientPtr user){
 	auto m = findMemberByClient(user);
+	if (!m->getNick().empty()){
+		sendPacketToAll(PacketStatus(self.lock(), m, Member::Status::offline));
+	}
 	return members.erase(m) > 0;
 }
 
@@ -92,6 +122,11 @@ bool Room::kickMember(ClientPtr user, string reason){
 }
 
 bool Room::kickMember(MemberPtr member, string reason){
+	auto ptr = self.lock();
+	member->getClient()->onKick(ptr);
+	if (!member->getNick().empty()){
+		sendPacketToAll(PacketStatus(ptr, member, Member::Status::offline));
+	}
 	return members.erase(member) > 0;
 }
 

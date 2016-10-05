@@ -17,9 +17,14 @@ void Client::onPacket(string msg){
 void Client::onDisconnect(){
 	auto ptr = self.lock();
 	for (RoomPtr room : rooms){
+		auto member = room->findMemberByClient(ptr);
 		room->removeMember(ptr);
 	}
 	rooms.clear();
+}
+
+void Client::onKick(RoomPtr room){
+	rooms.erase(room);
 }
 
 void Client::sendPacket(const Packet &pack){
@@ -31,9 +36,12 @@ void Client::sendRawData(const string &data){
 }
 
 MemberPtr Client::joinRoom(RoomPtr room){
+	auto ptr = self.lock();
+
 	rooms.insert(room);
-	auto member = room->addMember(self.lock());
+	auto member = room->addMember(ptr);
 	member->setStatus(Member::Status::online);
+
 	return member;
 }
 

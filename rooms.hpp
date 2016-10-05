@@ -22,6 +22,7 @@ using std::vector;
 using std::string;
 using std::set;
 using std::list;
+using std::weak_ptr;
 
 class Member {
 public:
@@ -30,20 +31,25 @@ private:
 	friend class Room;
 
 	ClientPtr client;
+	weak_ptr<Room> room;
+	weak_ptr<Member> self;
 	string nick;
 	Status status;
 public:
-	Member(ClientPtr cli){ client = cli; status = Status::bad; }
+	Member(weak_ptr<Room> rm, ClientPtr cli){ client = cli; room = rm; status = Status::bad; }
 
 	inline ClientPtr getClient(){ return client; }
 
+	MemberPtr getSelfPtr(){ return self.lock(); }
+	void setSelfPtr(weak_ptr<Member> wptr){ self = wptr; }
+
 	inline string getNick(){ return nick; }
-	inline void setNick(string nnick){ nick = nnick; }
+	void setNick(const string &nnick);
 
 	Status getStatus(){ return status; }
 	void setStatus(Status stat){ status = stat; }
 
-	inline void sendPacket(const Packet &pack);
+	void sendPacket(const Packet &pack);
 };
 
 class Room {
@@ -53,14 +59,14 @@ private:
 	set<MemberPtr> members;
 	string name;
 	list<string> history;
-	std::weak_ptr<Room> self;
+	weak_ptr<Room> self;
 
 	void addToHistory(const Packet &pack);
 public:
 	Room(Server *srv);
 	~Room();
 
-	void setSelfPtr(std::weak_ptr<Room> ptr){ self = ptr; }
+	void setSelfPtr(weak_ptr<Room> ptr){ self = ptr; }
 
 	void setOwner(uint nid);
 	inline uint getOwner(){ return ownerId; }

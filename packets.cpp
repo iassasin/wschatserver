@@ -72,6 +72,19 @@ Json::Value PacketMessage::serialize() const {
 
 void PacketMessage::process(Client &client){
 	if (!target.empty() && !message.empty()){
+		time_t curtime = time(nullptr);
+		if (curtime - client.lastMessageTime > 1){
+			client.messageCounter = 0;
+			client.lastMessageTime = curtime;
+		}
+
+		if (client.messageCounter > 3){
+			client.sendPacket(PacketSystem(target, "Вы слишком часто пишете!"));
+			return;
+		}
+
+		++client.messageCounter;
+
 		auto room = client.getRoomByName(target);
 
 		if (!room){
@@ -133,16 +146,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					syspack.message = "Такой ник уже занят";
 					client->sendPacket(syspack);
 				} else {
-					string oldnick = member->getNick();
 					member->setNick(nick);
-
-					PacketStatus spack(room, member);
-					if (!oldnick.empty()){
-						spack.status = Member::Status::nick_change;
-						spack.data = oldnick;
-					}
-
-					room->sendPacketToAll(spack);
 				}
 			} else {
 				syspack.message = "Ник должен содержать только латинские буквоцифры и _-, и не длинее 24 символов";
@@ -177,12 +181,13 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			auto m2 = room->findMemberByNick(nick);
 			if (!m2){
 				syspack.message = "Указанный пользователь не найден";
+				client->sendPacket(syspack);
 			} else {
 				PacketMessage pmsg(target, member->getNick(), smsg);
 				pmsg.isprivate = true;
 
 				client->sendPacket(pmsg);
-				m2->getClient()->sendPacket(pmsg);
+				m2->sendPacket(pmsg);
 			}
 		}
 		else {
@@ -384,8 +389,6 @@ void PacketJoin::process(Client &client){
 
 		if (member->getNick().empty()){
 			client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
-		} else {
-			room->sendPacketToAll(PacketStatus(room, member));
 		}
 	}
 }
@@ -420,8 +423,5 @@ void PacketLeave::process(Client &client){
 
 	auto member = room->findMemberByClient(client.getSelfPtr());
 	client.leaveRoom(room);
-	if (member){
-		room->sendPacketToAll(PacketStatus(room, member, Member::Status::offline));
-	}
 }
 
