@@ -6,13 +6,15 @@
 
 class Config {
 private:
-	Json::Value conf;
 public:
+	Json::Value conf;
+
 	Config(std::string file){
 		loadFromFile(file);
 	}
 
 	void loadFromFile(std::string file);
+
 	Json::Value operator [](std::string key){
 		return conf[key];
 	}

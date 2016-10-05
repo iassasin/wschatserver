@@ -28,16 +28,9 @@ Server::Server(int port)
 	    cout << date("[%H:%M:%S] ") << "Server: Opened connection #" << (size_t)connection.get()
 	    		<< " (" << connection->remote_endpoint_address.to_string() << ")" << endl;
 
-	    shared_ptr<Client> cli = make_shared<Client>(this, connection);
+	    ClientPtr cli = make_shared<Client>(this, connection);
+	    cli->setSelfPtr(cli);
 	    clients[connection] = cli;
-	    
-	    for (auto &v : pack_history){
-	    	this->sendRawData(connection, v);
-	    }
-	    
-	    //TODO: client init function
-	    PacketSystem msg("Перед началом общения укажите свой ник: /nick MyNick");
-	    this->sendPacket(connection, msg);
 	};
 	
 	chat.onclose = [&](auto connection, int status, const string& reason) {
@@ -67,13 +60,6 @@ void Server::start(){
 	server.start();
 }
 
-void Server::addToHistory(const string &spack){
-	pack_history.push_back(spack);
-	if (pack_history.size() > 50){
-		pack_history.pop_front();
-	}
-}
-
 void Server::sendRawData(shared_ptr<SocketServerBase<WS>::Connection> conn, const string &rdata){
 	stringstream response_ss;
 	response_ss << rdata;
@@ -91,8 +77,7 @@ void Server::sendPacketToAll(const Packet &pack){
 	Json::FastWriter wr;
 	stringstream response_ss;
 	string spack = wr.write(pack.serialize());
-	if (pack.type == Packet::Type::message)
-		addToHistory(spack);
+
 	response_ss << spack;
 	for (auto conn : server.get_connections()){
 		response_ss.seekg(0);
@@ -100,22 +85,22 @@ void Server::sendPacketToAll(const Packet &pack){
 	}
 }
 
-shared_ptr<Client> Server::getClientByName(string name){
+ClientPtr Server::getClientByName(string name){
 	for (auto clip : clients){
 		auto cli = clip.second;
 		if (!cli->getName().empty() && cli->getName() == name)
 			return cli; 
 	}
-	return shared_ptr<Client>();
+	return ClientPtr();
 }
 
-shared_ptr<Client> Server::getClientByID(int uid){
+ClientPtr Server::getClientByID(int uid){
 	for (auto clip : clients){
 		auto cli = clip.second;
 		if (cli->getID() > 0 && cli->getID() == uid)
 			return cli; 
 	}
-	return shared_ptr<Client>();
+	return ClientPtr();
 }
 
 vector<string> Server::getClients(){
@@ -129,10 +114,41 @@ vector<string> Server::getClients(){
 	return res;
 }
 
-void Server::kick(shared_ptr<Client> client){
+void Server::kick(ClientPtr client){
 	auto conn = client->getConnection();
 	clients.erase(conn);
 	client->onDisconnect();
 	server.send_close(conn, 0);
+}
+
+RoomPtr Server::createRoom(string name){
+	auto rm = getRoomByName(name);
+	if (rm)
+		return rm;
+
+	rm = make_shared<Room>(this);
+	rm->setName(name);
+	rm->setSelfPtr(rm);
+	rooms.insert(rm);
+	return rm;
+}
+
+bool Server::removeRoom(string name){
+	auto rm = getRoomByName(name);
+	if (rm){
+		return rooms.erase(rm) > 0;
+	}
+
+	return false;
+}
+
+RoomPtr Server::getRoomByName(string name){
+	for (RoomPtr room : rooms){
+		if (room->getName() == name){
+			return room;
+		}
+	}
+
+	return nullptr;
 }
 

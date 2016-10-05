@@ -2,7 +2,7 @@ CC = g++
 CPPFLAGS = -Wall -O3 -std=c++1y -flto
 LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -lmemcached -ljsoncpp
 
-SOURCES = $(wildcard *.cpp)
+SOURCES = $(wildcard *.cpp) $(wildcard regex/*.cpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
 
 APP_NAME = wsserver
@@ -20,4 +20,3 @@ clean:
 
 $(APP): $(OBJECTS)
 	$(LINK.o) -flto $^ $(LDLIBS) -o $(APP)
-

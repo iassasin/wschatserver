@@ -1,9 +1,11 @@
 #ifndef PACKETS_H_
 #define PACKETS_H_
 
-#include "packet.hpp"
 #include <ctime>
 #include <vector>
+
+#include "packet.hpp"
+#include "rooms.hpp"
 
 using std::vector;
 
@@ -18,10 +20,11 @@ class PacketSystem : public Packet {
 private:
 
 public:
+	string target;
 	string message;
 	
 	PacketSystem();
-	PacketSystem(const string &msg);
+	PacketSystem(const string &targ, const string &msg);
 	virtual ~PacketSystem();
 	
 	virtual void deserialize(const Json::Value &);
@@ -31,14 +34,15 @@ public:
 
 class PacketMessage : public Packet {
 private:
-
+	bool processCommand(MemberPtr member, RoomPtr room, const string &msg);
 public:
 	time_t msgtime;
+	string target;
 	string login;
 	string message;
 
 	PacketMessage();
-	PacketMessage(const string &log, const string &msg, const time_t &tm = 0);
+	PacketMessage(const string &targ, const string &log, const string &msg, const time_t &tm = 0);
 	virtual ~PacketMessage();
 	
 	virtual void deserialize(const Json::Value &);
@@ -50,10 +54,10 @@ class PacketOnlineList : public Packet {
 private:
 
 public:
-	vector<string> clients;
+	string target;
+	Json::Value list;
 
 	PacketOnlineList();
-	PacketOnlineList(Client &client);
 	virtual ~PacketOnlineList();
 	
 	virtual void deserialize(const Json::Value &);
@@ -79,16 +83,45 @@ class PacketStatus : public Packet {
 private:
 
 public:
-	enum class Status : int { bad = 0, online, offline, nick_change };
-	
-	Status status;
+	string target;
+	Member::Status status;
 	string name;
 	string data;
 	
 	PacketStatus();
-	PacketStatus(const string &nm, Status stat, const string &nname = "");
+	PacketStatus(RoomPtr room, MemberPtr member, Member::Status stat, const string &data = "");
+	PacketStatus(RoomPtr room, MemberPtr member, const string &data = "");
+	PacketStatus(const string &tg, const string &nm, Member::Status stat, const string &nname = "");
 	virtual ~PacketStatus();
 	
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
+	virtual void process(Client &);
+};
+
+class PacketJoin : public Packet {
+private:
+
+public:
+	string target;
+
+	PacketJoin();
+	virtual ~PacketJoin();
+
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
+	virtual void process(Client &);
+};
+
+class PacketLeave : public Packet {
+private:
+
+public:
+	string target;
+
+	PacketLeave();
+	virtual ~PacketLeave();
+
 	virtual void deserialize(const Json::Value &);
 	virtual Json::Value serialize() const;
 	virtual void process(Client &);

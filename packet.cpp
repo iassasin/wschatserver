@@ -27,6 +27,8 @@ Packet *Packet::read(const std::string &data){
 		case Type::online_list:			pack = new PacketOnlineList(); break;
 		case Type::auth:				pack = new PacketAuth(); break;
 		case Type::status:				pack = new PacketStatus(); break;
+		case Type::join:				pack = new PacketJoin(); break;
+		case Type::leave:				pack = new PacketLeave(); break;
 	}
 	if (pack){
 		try {
