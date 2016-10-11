@@ -16,17 +16,14 @@ Server::Server(int port)
 	auto& chat = server.endpoint["^/chat/?$"];
 	
 	chat.onmessage = [&](auto connection, auto message) {
-	    stringstream data_ss;
-	    message->data >> data_ss.rdbuf();
-
 	    if (clients.find(connection) != clients.end()){
-	    	clients[connection]->onPacket(data_ss.str());
+	    	clients[connection]->onPacket(message->string());
 	    }
 	};
 	
 	chat.onopen = [&, this](auto connection) {
 	    cout << date("[%H:%M:%S] ") << "Server: Opened connection #" << (size_t)connection.get()
-	    		<< " (" << connection->remote_endpoint_address.to_string() << ")" << endl;
+	    		<< " (" << connection->remote_endpoint_address << ")" << endl;
 
 	    ClientPtr cli = make_shared<Client>(this, connection);
 	    cli->setSelfPtr(cli);
@@ -35,7 +32,7 @@ Server::Server(int port)
 	
 	chat.onclose = [&](auto connection, int status, const string& reason) {
 	    cout << date("[%H:%M:%S] ") << "Server: Closed connection #" << (size_t)connection.get()
-	    		<< " (" << connection->remote_endpoint_address.to_string() << ")" << " with status code " << status << endl;
+	    		<< " (" << connection->remote_endpoint_address << ")" << " with status code " << status << endl;
 
 	    if (clients.find(connection) != clients.end()){
 			clients[connection]->onDisconnect();
@@ -45,7 +42,7 @@ Server::Server(int port)
 	
 	chat.onerror = [&](auto connection, const boost::system::error_code& ec) {
 		cout << date("[%H:%M:%S] ") << "Server: Error in connection #" << (size_t)connection.get()
-				<< " (" << connection->remote_endpoint_address.to_string() << "). "
+				<< " (" << connection->remote_endpoint_address << "). "
 				<< "Error: " << ec << ", error message: " << ec.message() << endl;
 
 		if (clients.find(connection) != clients.end()){
@@ -61,26 +58,26 @@ void Server::start(){
 }
 
 void Server::sendRawData(shared_ptr<SocketServerBase<WS>::Connection> conn, const string &rdata){
-	stringstream response_ss;
-	response_ss << rdata;
+	auto response_ss = make_shared<SendStream>();
+	*response_ss << rdata;
 	server.send(conn, response_ss);
 }
 
 void Server::sendPacket(shared_ptr<SocketServerBase<WS>::Connection> conn, const Packet &pack){
 	Json::FastWriter wr;
-	stringstream response_ss;
-	response_ss << wr.write(pack.serialize());
+	auto response_ss = make_shared<SendStream>();
+	*response_ss << wr.write(pack.serialize());
 	server.send(conn, response_ss);
 }
 
 void Server::sendPacketToAll(const Packet &pack){
 	Json::FastWriter wr;
-	stringstream response_ss;
+	auto response_ss = make_shared<SendStream>();
 	string spack = wr.write(pack.serialize());
 
-	response_ss << spack;
+	*response_ss << spack;
 	for (auto conn : server.get_connections()){
-		response_ss.seekg(0);
+		//response_ss->seekg(0);
 		server.send(conn, response_ss);
 	}
 }

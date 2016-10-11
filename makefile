@@ -1,6 +1,6 @@
 CC = g++
 CPPFLAGS = -Wall -O3 -std=c++1y -flto
-LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -lmemcached -ljsoncpp
+LDLIBS = -lpthread -lboost_system -lboost_regex -lcrypto -lmysqlcppconn -lmemcached -ljsoncpp
 
 SOURCES = $(wildcard *.cpp) $(wildcard regex/*.cpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)

@@ -44,7 +44,7 @@ public:
 	string getName(){ return name; }
 	void setName(const string &nm){ name = nm; }
 	
-	string getIP(){ return connection->remote_endpoint_address.to_string(); }
+	string getIP(){ return connection->remote_endpoint_address; }
 
 	int getID(){ return uid; }
 	void setID(int id){ uid = id; }

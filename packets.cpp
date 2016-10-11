@@ -131,7 +131,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			syspack.message = "Доступные команды:\n"
 					"/help\tвсе понятно\n"
 					"/nick <новый ник>\tсменить ник\n"
-					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функия тестовая)";
+					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
 			client->sendPacket(syspack);
 		}
 		else if (cmd == "nick"){
@@ -168,6 +168,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			}
 		}
 		else if (cmd == "msg"){
+			//TODO: можно отправить с пустого ника
+
 			string nick;
 			if (parser.next(r_to_space)){
 				parser.read(0, nick);
@@ -383,10 +385,6 @@ void PacketJoin::process(Client &client){
 
 	auto member = client.joinRoom(room);
 	if (member){
-		for (const string &s : room->getHistory()){
-			client.sendRawData(s);
-		}
-
 		if (member->getNick().empty()){
 			client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
 		}

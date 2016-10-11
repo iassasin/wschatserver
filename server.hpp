@@ -16,6 +16,8 @@ using namespace std;
 using namespace SimpleWeb;
 
 class Server {
+public:
+	using SendStream = SocketServerBase<WS>::SendStream;
 private:
 	map<shared_ptr<SocketServerBase<WS>::Connection>, ClientPtr> clients;
 	SocketServer<WS> server;

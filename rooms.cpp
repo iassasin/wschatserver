@@ -92,6 +92,10 @@ MemberPtr Room::addMember(ClientPtr user){
 
 	auto res = members.insert(m);
 
+	for (const string &s : getHistory()){
+		user->sendRawData(s);
+	}
+
 	if (!m->getNick().empty()){
 		sendPacketToAll(PacketStatus(ptr, m, Member::Status::online));
 	}
