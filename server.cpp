@@ -9,7 +9,7 @@
 #include "packets.hpp"
 
 Server::Server(int port)
-	: server(port, 1)
+	: server(port, 1, config["ssl"]["certificate"].asString(), config["ssl"]["private_key"].asString())
 {
 	cout << "Started wsserver at port " << port << endl;
 
@@ -57,13 +57,13 @@ void Server::start(){
 	server.start();
 }
 
-void Server::sendRawData(shared_ptr<SocketServerBase<WS>::Connection> conn, const string &rdata){
+void Server::sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata){
 	auto response_ss = make_shared<SendStream>();
 	*response_ss << rdata;
 	server.send(conn, response_ss);
 }
 
-void Server::sendPacket(shared_ptr<SocketServerBase<WS>::Connection> conn, const Packet &pack){
+void Server::sendPacket(shared_ptr<WSServerBase::Connection> conn, const Packet &pack){
 	Json::FastWriter wr;
 	auto response_ss = make_shared<SendStream>();
 	*response_ss << wr.write(pack.serialize());

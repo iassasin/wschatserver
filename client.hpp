@@ -16,7 +16,7 @@ using namespace SimpleWeb;
 
 class Client {
 private:
-	shared_ptr<SocketServerBase<WS>::Connection> connection;
+	shared_ptr<WSServerBase::Connection> connection;
 	Server *server;
 	string name;
 	int uid;
@@ -26,7 +26,7 @@ public:
 	time_t lastMessageTime;
 	int messageCounter;
 
-	Client(Server *srv, shared_ptr<SocketServerBase<WS>::Connection> conn){
+	Client(Server *srv, shared_ptr<WSServerBase::Connection> conn){
 		server = srv;
 		connection = conn;
 		uid = -1;
@@ -50,7 +50,7 @@ public:
 	void setID(int id){ uid = id; }
 	
 	Server *getServer(){ return server; }
-	shared_ptr<SocketServerBase<WS>::Connection> getConnection(){ return connection; }
+	shared_ptr<WSServerBase::Connection> getConnection(){ return connection; }
 	
 	void onPacket(string pack);
 	void onDisconnect();
