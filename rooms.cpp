@@ -41,6 +41,29 @@ void Room::onDestroy(){
 	}
 }
 
+Json::Value Room::serialize(){
+	Json::Value val;
+	val["owner_id"] = ownerId;
+	val["name"] = name;
+
+	auto &hist = val["history"];
+	for (string p : history){
+		hist.append(p);
+	}
+
+	return val;
+}
+
+void Room::deserialize(const Json::Value &val){
+	ownerId = val["owner_id"].asUInt();
+	name = val["name"].asString();
+
+	history.clear();
+	for (auto &v : val["history"]){
+		history.push_back(v.asString());
+	}
+}
+
 void Room::addToHistory(const Packet &pack){
 	if (pack.type == Packet::Type::message){
 		Json::FastWriter wr;

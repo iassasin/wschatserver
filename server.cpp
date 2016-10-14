@@ -57,6 +57,31 @@ void Server::start(){
 	server.start();
 }
 
+void Server::stop(){
+	server.stop();
+}
+
+Json::Value Server::serialize(){
+	Json::Value val;
+
+	auto &sr = val["rooms"];
+	for (RoomPtr r : rooms){
+		sr.append(r->serialize());
+	}
+
+	return val;
+}
+
+void Server::deserialize(const Json::Value &val){
+	rooms.clear();
+	for (auto &v : val["rooms"]){
+		RoomPtr rm = make_shared<Room>(this);
+		rm->setSelfPtr(rm);
+		rm->deserialize(v);
+		rooms.insert(rm);
+	}
+}
+
 void Server::sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata){
 	auto response_ss = make_shared<SendStream>();
 	*response_ss << rdata;

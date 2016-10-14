@@ -10,10 +10,11 @@ public:
 	Json::Value conf;
 
 	Config(std::string file){
-		loadFromFile(file);
+		loadFromFile(file, conf);
 	}
 
-	void loadFromFile(std::string file);
+	static void loadFromFile(std::string file, Json::Value &val);
+	static void writeToFile(std::string file, const Json::Value &val);
 
 	Json::Value operator [](std::string key){
 		return conf[key];

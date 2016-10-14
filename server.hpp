@@ -1,6 +1,7 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
+#include <jsoncpp/json/json.h>
 #include "server_wss.hpp"
 
 class Server;
@@ -28,9 +29,14 @@ private:
 	set<RoomPtr> rooms;
 public:
 	Server(int port);
+	~Server(){ stop(); }
 	
 	void start();
+	void stop();
 	
+	Json::Value serialize();
+	void deserialize(const Json::Value &);
+
 	void kick(ClientPtr client);
 	void sendPacket(shared_ptr<WSServerBase::Connection> conn, const Packet &);
 	void sendPacketToAll(const Packet &);

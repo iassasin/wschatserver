@@ -14,6 +14,7 @@ using RoomPtr = std::shared_ptr<Room>;
 #include <cstdint>
 #include <set>
 #include <list>
+#include <jsoncpp/json/json.h>
 
 #include "server.hpp"
 #include "client.hpp"
@@ -78,6 +79,9 @@ public:
 
 	void onCreate();
 	void onDestroy();
+
+	Json::Value serialize();
+	void deserialize(const Json::Value &);
 
 	inline const set<MemberPtr> &getMembers(){ return members; }
 	MemberPtr addMember(ClientPtr user);

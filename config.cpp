@@ -4,9 +4,15 @@
 
 Config config("wsserver.conf");
 
-void Config::loadFromFile(std::string file){
+void Config::loadFromFile(std::string file, Json::Value &val){
 	Json::Reader rd;
 	std::ifstream ifs(file);
-	conf.clear();
-	rd.parse(ifs, conf);
+	val.clear();
+	rd.parse(ifs, val);
+}
+
+void Config::writeToFile(std::string file, const Json::Value &val){
+	Json::StyledStreamWriter wr;
+	std::ofstream ofs(file);
+	wr.write(ofs, val);
 }
