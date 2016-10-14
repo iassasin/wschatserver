@@ -87,13 +87,13 @@ private:
 public:
 	string target;
 	Member::Status status;
-	string name;
+	uint member_id;
+	string name; //TODO: убрать
 	string data;
 	
 	PacketStatus();
-	PacketStatus(RoomPtr room, MemberPtr member, Member::Status stat, const string &data = "");
-	PacketStatus(RoomPtr room, MemberPtr member, const string &data = "");
-	PacketStatus(const string &tg, const string &nm, Member::Status stat, const string &nname = "");
+	PacketStatus(MemberPtr member, Member::Status stat, const string &data = "");
+	PacketStatus(MemberPtr member, const string &data = "");
 	virtual ~PacketStatus();
 	
 	virtual void deserialize(const Json::Value &);
@@ -106,6 +106,8 @@ private:
 
 public:
 	string target;
+	uint member_id;
+	string login;
 
 	PacketJoin();
 	virtual ~PacketJoin();

@@ -11,7 +11,7 @@ void Member::setNick(const string &nnick){
 	nick = nnick;
 	auto roomp = room.lock();
 
-	PacketStatus spack(roomp, self.lock());
+	PacketStatus spack(self.lock());
 	if (!oldnick.empty()){
 		spack.status = Member::Status::nick_change;
 		spack.data = oldnick;
@@ -23,6 +23,7 @@ void Member::setNick(const string &nnick){
 Room::Room(Server *srv){
 	server = srv;
 	ownerId = -1;
+	nextMemberId = 0;
 }
 
 Room::~Room(){
@@ -64,6 +65,13 @@ void Room::deserialize(const Json::Value &val){
 	}
 }
 
+uint Room::genNextMemberId(){
+	do {
+		++nextMemberId;
+	} while (nextMemberId == 0 || findMemberById(nextMemberId));
+	return nextMemberId;
+}
+
 void Room::addToHistory(const Packet &pack){
 	if (pack.type == Packet::Type::message){
 		Json::FastWriter wr;
@@ -94,6 +102,16 @@ MemberPtr Room::findMemberByNick(string nick){
 	return nullptr;
 }
 
+MemberPtr Room::findMemberById(uint id){
+	for (MemberPtr m : members){
+		if (m->id == id){
+			return m;
+		}
+	}
+
+	return nullptr;
+}
+
 void Room::setOwner(uint nid){
 	ownerId = nid;
 }
@@ -111,6 +129,7 @@ MemberPtr Room::addMember(ClientPtr user){
 	auto ptr = self.lock();
 	auto m = make_shared<Member>(ptr, user);
 	m->setSelfPtr(m);
+	m->id = genNextMemberId();
 	m->nick = user->getName();
 
 	auto res = members.insert(m);
@@ -120,7 +139,7 @@ MemberPtr Room::addMember(ClientPtr user){
 	}
 
 	if (!m->getNick().empty()){
-		sendPacketToAll(PacketStatus(ptr, m, Member::Status::online));
+		sendPacketToAll(PacketStatus(m, Member::Status::online));
 	}
 
 	if (res.second){
@@ -133,7 +152,7 @@ MemberPtr Room::addMember(ClientPtr user){
 bool Room::removeMember(ClientPtr user){
 	auto m = findMemberByClient(user);
 	if (!m->getNick().empty()){
-		sendPacketToAll(PacketStatus(self.lock(), m, Member::Status::offline));
+		sendPacketToAll(PacketStatus(m, Member::Status::offline));
 	}
 	return members.erase(m) > 0;
 }
@@ -152,7 +171,7 @@ bool Room::kickMember(MemberPtr member, string reason){
 	auto ptr = self.lock();
 	member->getClient()->onKick(ptr);
 	if (!member->getNick().empty()){
-		sendPacketToAll(PacketStatus(ptr, member, Member::Status::offline));
+		sendPacketToAll(PacketStatus(member, Member::Status::offline));
 	}
 	return members.erase(member) > 0;
 }

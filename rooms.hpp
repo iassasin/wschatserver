@@ -31,16 +31,19 @@ public:
 private:
 	friend class Room;
 
+	uint id;
 	ClientPtr client;
 	weak_ptr<Room> room;
 	weak_ptr<Member> self;
 	string nick;
 	Status status;
 public:
-	Member(weak_ptr<Room> rm, ClientPtr cli){ client = cli; room = rm; status = Status::bad; }
+	Member(weak_ptr<Room> rm, ClientPtr cli){ id = 0; client = cli; room = rm; status = Status::bad; }
 
 	inline ClientPtr getClient(){ return client; }
+	inline uint getId(){ return id; }
 
+	RoomPtr getRoom(){ return room.lock(); }
 	MemberPtr getSelfPtr(){ return self.lock(); }
 	void setSelfPtr(weak_ptr<Member> wptr){ self = wptr; }
 
@@ -62,6 +65,9 @@ private:
 	list<string> history;
 	weak_ptr<Room> self;
 
+	uint nextMemberId;
+
+	uint genNextMemberId();
 	void addToHistory(const Packet &pack);
 public:
 	Room(Server *srv);
@@ -84,10 +90,14 @@ public:
 	void deserialize(const Json::Value &);
 
 	inline const set<MemberPtr> &getMembers(){ return members; }
+
 	MemberPtr addMember(ClientPtr user);
 	bool removeMember(ClientPtr user);
+
 	MemberPtr findMemberByClient(ClientPtr client);
 	MemberPtr findMemberByNick(string nick);
+	MemberPtr findMemberById(uint id);
+
 	bool kickMember(ClientPtr user, string reason = "");
 	bool kickMember(MemberPtr member, string reason = "");
 

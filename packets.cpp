@@ -238,7 +238,7 @@ void PacketOnlineList::process(Client &client){
 	auto members = room->getMembers();
 	for (MemberPtr m : members){
 		if (!m->getNick().empty()){
-			PacketStatus pack(room, m);
+			PacketStatus pack(m);
 			list.append(pack.serialize());
 		}
 	}
@@ -298,30 +298,24 @@ void PacketAuth::process(Client &client){
 PacketStatus::PacketStatus(){
 	type = Type::status;
 	status = Member::Status::bad;
+	member_id = 0;
 }
 
-PacketStatus::PacketStatus(RoomPtr room, MemberPtr member, Member::Status stat, const string &dt)
+PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &dt)
 	:PacketStatus()
 {
+	auto room = member->getRoom();
 	target = room->getName();
 	name = member->getNick();
+	member_id = member->getId();
 	status = stat;
 	data = dt;
 }
 
-PacketStatus::PacketStatus(RoomPtr room, MemberPtr member, const string &dt)
-	:PacketStatus(room, member, member->getStatus(), dt)
+PacketStatus::PacketStatus(MemberPtr member, const string &dt)
+	:PacketStatus(member, member->getStatus(), dt)
 {
 
-}
-
-PacketStatus::PacketStatus(const string &tg, const string &nm, Member::Status stat, const string &nname)
-	: PacketStatus()
-{
-	target = tg;
-	name = nm;
-	status = stat;
-	data = nname;
 }
 
 PacketStatus::~PacketStatus(){
@@ -339,8 +333,9 @@ Json::Value PacketStatus::serialize() const {
 	Json::Value obj;
 	obj["type"] = (int) type;
 	obj["target"] = target;
-	obj["status"] = (int) status;
 	obj["name"] = name;
+	obj["status"] = (int) status;
+	obj["member_id"] = member_id;
 	obj["data"] = data;
 	return obj;
 }
@@ -353,6 +348,7 @@ void PacketStatus::process(Client &client){
 
 PacketJoin::PacketJoin(){
 	type = Type::join;
+	member_id = 0;
 }
 
 PacketJoin::~PacketJoin(){
@@ -367,6 +363,8 @@ Json::Value PacketJoin::serialize() const {
 	Json::Value obj;
 	obj["type"] = (int) type;
 	obj["target"] = target;
+	obj["member_id"] = member_id;
+	obj["login"] = login;
 	return obj;
 }
 
@@ -385,7 +383,11 @@ void PacketJoin::process(Client &client){
 
 	auto member = client.joinRoom(room);
 	if (member){
-		if (member->getNick().empty()){
+		login = member->getNick();
+		member_id = member->getId();
+		client.sendPacket(*this);
+
+		if (login.empty()){
 			client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
 		}
 	}
