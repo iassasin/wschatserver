@@ -38,13 +38,16 @@ private:
 public:
 	time_t msgtime;
 	string target;
-	string login;
 	string message;
-	bool isprivate;
+	string from_login;
+	uint from_id;
+	uint to_id;
 
 	PacketMessage();
-	PacketMessage(const string &targ, const string &log, const string &msg) : PacketMessage(targ, log, msg, time(nullptr)){};
-	PacketMessage(const string &targ, const string &log, const string &msg, const time_t &tm);
+	PacketMessage(MemberPtr member, const string &msg) : PacketMessage(member, msg, time(nullptr)){}
+	PacketMessage(MemberPtr from, MemberPtr to, const string &msg) : PacketMessage(from, to, msg, time(nullptr)){}
+	PacketMessage(MemberPtr member, const string &msg, const time_t &tm);
+	PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm);
 	virtual ~PacketMessage();
 	
 	virtual void deserialize(const Json::Value &);
@@ -88,7 +91,7 @@ public:
 	string target;
 	Member::Status status;
 	uint member_id;
-	string name; //TODO: убрать
+	string name;
 	string data;
 	
 	PacketStatus();

@@ -33,15 +33,26 @@ void PacketSystem::process(Client &client){}
 PacketMessage::PacketMessage(){
 	type = Type::message;
 	msgtime = 0;
-	isprivate = false;
+	from_id = 0;
+	to_id = 0;
 }
 
-PacketMessage::PacketMessage(const string &targ, const string &log, const string &msg, const time_t &tm) : PacketMessage(){
-	login = log;
-	target = targ;
+PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &tm) : PacketMessage(){
+	target = member->getRoom()->getName();
+	from_login = member->getNick();
+	from_id = member->getId();
+	to_id = 0;
 	message = msg;
 	msgtime = tm;
-	isprivate = false;
+}
+
+PacketMessage::PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm) : PacketMessage(){
+	target = from->getRoom()->getName();
+	from_login = from->getNick();
+	from_id = from->getId();
+	to_id = to->getId();
+	message = msg;
+	msgtime = tm;
 }
 
 PacketMessage::~PacketMessage(){
@@ -51,7 +62,7 @@ PacketMessage::~PacketMessage(){
 void PacketMessage::deserialize(const Json::Value &obj){
 	message = obj["message"].asString();
 	target = obj["target"].asString();
-	login = obj["login"].asString();
+	to_id = obj["to"].asUInt();
 	msgtime = obj["time"].asUInt64();
 }
 
@@ -60,8 +71,9 @@ Json::Value PacketMessage::serialize() const {
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	obj["time"] = (Json::UInt64) msgtime;
-	obj["login"] = login;
-	obj["pm"] = isprivate;
+	obj["from_login"] = from_login;
+	obj["from"] = from_id;
+	obj["to"] = to_id;
 	if (message.size() > 30000){
 		obj["message"] = string(message, 0, 30000);
 	} else {
@@ -83,6 +95,11 @@ void PacketMessage::process(Client &client){
 			return;
 		}
 
+		if (regex_match(message, regex("\\s*"))){
+			client.sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
+			return;
+		}
+
 		++client.messageCounter;
 
 		auto room = client.getRoomByName(target);
@@ -98,7 +115,7 @@ void PacketMessage::process(Client &client){
 			if (nick.empty()){
 				client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
 			} else {
-				room->sendPacketToAll(PacketMessage(target, member->getNick(), message, time(nullptr)));
+				room->sendPacketToAll(PacketMessage(member, message));
 			}
 		}
 	}
@@ -168,28 +185,32 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			}
 		}
 		else if (cmd == "msg"){
-			//TODO: можно отправить с пустого ника
-
-			string nick;
-			if (parser.next(r_to_space)){
-				parser.read(0, nick);
-			}
-			
-			string smsg;
-			if (parser.next(r_spaces) && parser.next(r_to_end)){
-				parser.read(0, smsg);
-			}
-			
-			auto m2 = room->findMemberByNick(nick);
-			if (!m2){
-				syspack.message = "Указанный пользователь не найден";
-				client->sendPacket(syspack);
+			if (member->getNick().empty()){
+				badcmd = true;
 			} else {
-				PacketMessage pmsg(target, member->getNick(), smsg);
-				pmsg.isprivate = true;
+				string nick;
+				if (parser.next(r_to_space)){
+					parser.read(0, nick);
+				}
 
-				client->sendPacket(pmsg);
-				m2->sendPacket(pmsg);
+				string smsg;
+				if (parser.next(r_spaces) && parser.next(r_to_end)){
+					parser.read(0, smsg);
+				}
+
+				if (regex_match(smsg, regex("\\s*"))){
+					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
+				} else {
+					auto m2 = room->findMemberByNick(nick);
+					if (!m2){
+						syspack.message = "Указанный пользователь не найден";
+						client->sendPacket(syspack);
+					} else {
+						PacketMessage pmsg(member, m2, smsg);
+						client->sendPacket(pmsg);
+						m2->sendPacket(pmsg);
+					}
+				}
 			}
 		}
 		else {
