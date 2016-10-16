@@ -37,11 +37,15 @@ private:
 	weak_ptr<Member> self;
 	string nick;
 	Status status;
+	bool girl;
 public:
-	Member(weak_ptr<Room> rm, ClientPtr cli){ id = 0; client = cli; room = rm; status = Status::bad; }
+	Member(weak_ptr<Room> rm, ClientPtr cli){ id = 0; client = cli; room = rm; status = Status::bad; girl = false; }
 
 	inline ClientPtr getClient(){ return client; }
 	inline uint getId(){ return id; }
+
+	inline bool isGirl(){ return girl; }
+	inline void setGirl(bool g){ girl = g; }
 
 	RoomPtr getRoom(){ return room.lock(); }
 	MemberPtr getSelfPtr(){ return self.lock(); }

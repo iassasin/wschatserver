@@ -22,6 +22,7 @@ private:
 	int uid;
 	set<RoomPtr> rooms;
 	weak_ptr<Client> self;
+	bool _isGirl;
 public:
 	time_t lastMessageTime;
 	int messageCounter;
@@ -32,6 +33,7 @@ public:
 		uid = -1;
 		lastMessageTime = time(nullptr);
 		messageCounter = 0;
+		_isGirl = false;
 	}
 	
 	~Client(){
@@ -40,6 +42,9 @@ public:
 	
 	void setSelfPtr(weak_ptr<Client> wptr){ self = wptr; }
 	ClientPtr getSelfPtr(){ return self.lock(); }
+
+	bool isGirl(){ return _isGirl; }
+	void setGirl(bool g){ _isGirl = g; }
 
 	string getName(){ return name; }
 	void setName(const string &nm){ name = nm; }

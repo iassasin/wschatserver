@@ -131,6 +131,7 @@ MemberPtr Room::addMember(ClientPtr user){
 	m->setSelfPtr(m);
 	m->id = genNextMemberId();
 	m->nick = user->getName();
+	m->girl = user->isGirl();
 
 	auto res = members.insert(m);
 

@@ -298,12 +298,13 @@ void PacketAuth::process(Client &client){
 			try {
 				int uid = stoi(id.c_str());
 	
-				auto ps = db.prepare("SELECT login FROM users WHERE id = ?");
+				auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
 				ps->setInt(1, uid);
 				auto rs = as_unique(ps->executeQuery());
 				if (rs->next()){
 					client.setID(uid);
 					client.setName(rs->getString(1));
+					client.setGirl(rs->getInt(2) == 4);
 				}
 			} catch (SQLException &e){
 				cout << date("[%H:%M:%S] ") << "# ERR: " << e.what() << endl;
@@ -320,6 +321,7 @@ PacketStatus::PacketStatus(){
 	type = Type::status;
 	status = Member::Status::bad;
 	member_id = 0;
+	girl = false;
 }
 
 PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &dt)
@@ -329,6 +331,7 @@ PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &
 	target = room->getName();
 	name = member->getNick();
 	member_id = member->getId();
+	girl = member->isGirl();
 	status = stat;
 	data = dt;
 }
@@ -357,6 +360,7 @@ Json::Value PacketStatus::serialize() const {
 	obj["name"] = name;
 	obj["status"] = (int) status;
 	obj["member_id"] = member_id;
+	obj["girl"] = girl;
 	obj["data"] = data;
 	return obj;
 }

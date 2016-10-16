@@ -91,6 +91,7 @@ public:
 	string target;
 	Member::Status status;
 	uint member_id;
+	bool girl;
 	string name;
 	string data;
 	
