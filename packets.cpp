@@ -294,6 +294,9 @@ void PacketOnlineList::process(Client &client){
 	for (MemberPtr m : members){
 		if (!m->getNick().empty()){
 			PacketStatus pack(m);
+			if (client.isAdmin()){
+				pack.user_id = m->getClient()->getID();
+			}
 			list.append(pack.serialize());
 		}
 	}
@@ -360,6 +363,7 @@ PacketStatus::PacketStatus(){
 	status = Member::Status::bad;
 	member_id = 0;
 	girl = false;
+	user_id = 0;
 }
 
 PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &dt)
@@ -399,6 +403,7 @@ Json::Value PacketStatus::serialize() const {
 	obj["name"] = name;
 	obj["status"] = (int) status;
 	obj["member_id"] = member_id;
+	obj["user_id"] = user_id;
 	obj["girl"] = girl;
 	obj["color"] = color;
 	obj["data"] = data;

@@ -18,10 +18,11 @@ class Client {
 private:
 	shared_ptr<WSServerBase::Connection> connection;
 	Server *server;
-	string name;
-	int uid;
 	set<RoomPtr> rooms;
 	weak_ptr<Client> self;
+
+	string name;
+	int uid;
 	bool _isGirl;
 	string color;
 public:
@@ -31,7 +32,7 @@ public:
 	Client(Server *srv, shared_ptr<WSServerBase::Connection> conn){
 		server = srv;
 		connection = conn;
-		uid = -1;
+		uid = 0;
 		lastMessageTime = time(nullptr);
 		messageCounter = 0;
 		_isGirl = false;
