@@ -134,7 +134,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	regex r_spaces("^\\s+");
 	regex r_to_end("^.+$");
 	regex r_to_space("^[^\\s]+");
-	regex r_color("^#?([\\da-fA-F]{3}|[\\da-fA-F]{6})");
+	regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
 
 	if (parser.next(r_cmd)){
 		badcmd = false;
