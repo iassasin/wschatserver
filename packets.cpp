@@ -148,6 +148,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			syspack.message = "Доступные команды:\n"
 					"/help\tвсе понятно\n"
 					"/nick <новый ник>\tсменить ник\n"
+					"/gender [f|m]\tсменить пол в пределах комнаты\n"
 					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
 			client->sendPacket(syspack);
 		}
@@ -183,6 +184,23 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				syspack.message = "Такой пользователь не найден";
 				client->sendPacket(syspack);
 			}
+		}
+		else if (cmd == "gender"){
+			string g;
+			if (parser.next(r_to_space)){
+				parser.read(0, g);
+				if (!(g[0] == 'f' || g[0] == 'm')){
+					g = "";
+				}
+			}
+
+			if (g.empty()){
+				member->setGirl(!member->isGirl());
+			} else {
+				member->setGirl(g[0] == 'f');
+			}
+
+			room->sendPacketToAll(PacketStatus(member, Member::Status::gender_change));
 		}
 		else if (cmd == "msg"){
 			if (member->getNick().empty()){
