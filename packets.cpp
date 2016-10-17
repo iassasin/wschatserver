@@ -41,18 +41,14 @@ PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &
 	target = member->getRoom()->getName();
 	from_login = member->getNick();
 	from_id = member->getId();
+	color = member->getColor();
 	to_id = 0;
 	message = msg;
 	msgtime = tm;
 }
 
-PacketMessage::PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm) : PacketMessage(){
-	target = from->getRoom()->getName();
-	from_login = from->getNick();
-	from_id = from->getId();
+PacketMessage::PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm) : PacketMessage(from, msg, tm){
 	to_id = to->getId();
-	message = msg;
-	msgtime = tm;
 }
 
 PacketMessage::~PacketMessage(){
@@ -71,6 +67,7 @@ Json::Value PacketMessage::serialize() const {
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	obj["time"] = (Json::UInt64) msgtime;
+	obj["color"] = color;
 	obj["from_login"] = from_login;
 	obj["from"] = from_id;
 	obj["to"] = to_id;
@@ -137,6 +134,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	regex r_spaces("^\\s+");
 	regex r_to_end("^.+$");
 	regex r_to_space("^[^\\s]+");
+	regex r_color("^#?([\\da-fA-F]{3}|[\\da-fA-F]{6})");
 
 	if (parser.next(r_cmd)){
 		badcmd = false;
@@ -148,7 +146,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			syspack.message = "Доступные команды:\n"
 					"/help\tвсе понятно\n"
 					"/nick <новый ник>\tсменить ник\n"
-					"/gender [f|m]\tсменить пол в пределах комнаты\n"
+					"/gender [f|m]\tсменить пол\n"
+					"/color <цвет в hex-формате>\tсменить цвет. Например: #f00 (красный), #f0f000 (оттенок розового). Допускается не писать знак #.\n"
 					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
 			client->sendPacket(syspack);
 		}
@@ -201,6 +200,23 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			}
 
 			room->sendPacketToAll(PacketStatus(member, Member::Status::gender_change));
+		}
+		else if (cmd == "color"){
+			string clr;
+			if (parser.next(r_color)){
+				parser.read(0, clr);
+				if (clr[0] != '#'){
+					clr = string("#") + clr;
+				}
+			}
+
+			if (clr.empty()){
+				syspack.message = "Указан неверный цвет";
+				member->sendPacket(syspack);
+			} else {
+				member->setColor(clr);
+				room->sendPacketToAll(PacketStatus(member, Member::Status::color_change));
+			}
 		}
 		else if (cmd == "msg"){
 			if (member->getNick().empty()){
@@ -307,6 +323,8 @@ Json::Value PacketAuth::serialize() const {
 }
 
 void PacketAuth::process(Client &client){
+	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
+
 	if (!ukey.empty()){
 		Memcache cache;
 		Database db;
@@ -320,9 +338,11 @@ void PacketAuth::process(Client &client){
 				ps->setInt(1, uid);
 				auto rs = as_unique(ps->executeQuery());
 				if (rs->next()){
+					int gid = rs->getInt(2);
 					client.setID(uid);
 					client.setName(rs->getString(1));
-					client.setGirl(rs->getInt(2) == 4);
+					client.setGirl(gid == 4);
+					client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
 				}
 			} catch (SQLException &e){
 				cout << date("[%H:%M:%S] ") << "# ERR: " << e.what() << endl;
@@ -350,6 +370,7 @@ PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &
 	name = member->getNick();
 	member_id = member->getId();
 	girl = member->isGirl();
+	color = member->getColor();
 	status = stat;
 	data = dt;
 }
@@ -379,6 +400,7 @@ Json::Value PacketStatus::serialize() const {
 	obj["status"] = (int) status;
 	obj["member_id"] = member_id;
 	obj["girl"] = girl;
+	obj["color"] = color;
 	obj["data"] = data;
 	return obj;
 }

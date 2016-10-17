@@ -27,7 +27,7 @@ using std::weak_ptr;
 
 class Member {
 public:
-	enum class Status : int { bad = 0, offline, online, away, nick_change };
+	enum class Status : int { bad = 0, offline, online, away, nick_change, gender_change, color_change };
 private:
 	friend class Room;
 
@@ -38,14 +38,24 @@ private:
 	string nick;
 	Status status;
 	bool girl;
+	string color;
 public:
-	Member(weak_ptr<Room> rm, ClientPtr cli){ id = 0; client = cli; room = rm; status = Status::bad; girl = false; }
+	Member(weak_ptr<Room> rm, ClientPtr cli){
+		id = 0; client = cli;
+		room = rm;
+		status = Status::bad;
+		girl = false;
+		color = "gray";
+	}
 
 	inline ClientPtr getClient(){ return client; }
 	inline uint getId(){ return id; }
 
 	inline bool isGirl(){ return girl; }
 	inline void setGirl(bool g){ girl = g; }
+
+	inline string getColor(){ return color; }
+	inline void setColor(string clr){ color = clr; }
 
 	RoomPtr getRoom(){ return room.lock(); }
 	MemberPtr getSelfPtr(){ return self.lock(); }

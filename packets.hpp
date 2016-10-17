@@ -39,6 +39,7 @@ public:
 	time_t msgtime;
 	string target;
 	string message;
+	string color;
 	string from_login;
 	uint from_id;
 	uint to_id;
@@ -92,6 +93,7 @@ public:
 	Member::Status status;
 	uint member_id;
 	bool girl;
+	string color;
 	string name;
 	string data;
 	

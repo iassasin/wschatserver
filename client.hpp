@@ -23,6 +23,7 @@ private:
 	set<RoomPtr> rooms;
 	weak_ptr<Client> self;
 	bool _isGirl;
+	string color;
 public:
 	time_t lastMessageTime;
 	int messageCounter;
@@ -34,6 +35,7 @@ public:
 		lastMessageTime = time(nullptr);
 		messageCounter = 0;
 		_isGirl = false;
+		color = "gray";
 	}
 	
 	~Client(){
@@ -43,18 +45,21 @@ public:
 	void setSelfPtr(weak_ptr<Client> wptr){ self = wptr; }
 	ClientPtr getSelfPtr(){ return self.lock(); }
 
-	bool isGirl(){ return _isGirl; }
-	void setGirl(bool g){ _isGirl = g; }
+	inline bool isGirl(){ return _isGirl; }
+	inline void setGirl(bool g){ _isGirl = g; }
 
-	string getName(){ return name; }
-	void setName(const string &nm){ name = nm; }
-	
-	string getIP(){ return connection->remote_endpoint_address; }
+	inline string getColor(){ return color; }
+	inline void setColor(string clr){ color = clr; }
 
-	int getID(){ return uid; }
-	void setID(int id){ uid = id; }
+	inline string getName(){ return name; }
+	inline void setName(const string &nm){ name = nm; }
 	
-	Server *getServer(){ return server; }
+	inline string getIP(){ return connection->remote_endpoint_address; }
+
+	inline int getID(){ return uid; }
+	inline void setID(int id){ uid = id; }
+	
+	inline Server *getServer(){ return server; }
 	shared_ptr<WSServerBase::Connection> getConnection(){ return connection; }
 	
 	void onPacket(string pack);
