@@ -51,6 +51,8 @@ public:
 	inline ClientPtr getClient(){ return client; }
 	inline uint getId(){ return id; }
 
+	inline bool hasNick(){ return !nick.empty(); }
+
 	inline bool isGirl(){ return girl; }
 	inline void setGirl(bool g){ girl = g; }
 

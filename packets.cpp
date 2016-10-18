@@ -158,8 +158,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			}
 
 			cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << client->getIP() << ")" << endl;
-			if (regex_match(nick, regex("^([a-zA-Z0-9-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
-				if (room->findMemberByNick(nick)){
+			if (nick.empty() || regex_match(nick, regex("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
+				if (!nick.empty() && room->findMemberByNick(nick)){
 					syspack.message = "Такой ник уже занят";
 					client->sendPacket(syspack);
 				} else {
@@ -199,7 +199,11 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				member->setGirl(g[0] == 'f');
 			}
 
-			room->sendPacketToAll(PacketStatus(member, Member::Status::gender_change));
+			if (member->hasNick()){
+				room->sendPacketToAll(PacketStatus(member, Member::Status::gender_change));
+			} else {
+				member->sendPacket(PacketStatus(member, Member::Status::gender_change));
+			}
 		}
 		else if (cmd == "color"){
 			string clr;
@@ -215,11 +219,16 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				member->sendPacket(syspack);
 			} else {
 				member->setColor(clr);
-				room->sendPacketToAll(PacketStatus(member, Member::Status::color_change));
+
+				if (member->hasNick()){
+					room->sendPacketToAll(PacketStatus(member, Member::Status::color_change));
+				} else {
+					member->sendPacket(PacketStatus(member, Member::Status::color_change));
+				}
 			}
 		}
 		else if (cmd == "msg"){
-			if (member->getNick().empty()){
+			if (!member->hasNick()){
 				badcmd = true;
 			} else {
 				string nick;

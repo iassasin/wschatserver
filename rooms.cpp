@@ -7,14 +7,23 @@ void Member::sendPacket(const Packet &pack){
 }
 
 void Member::setNick(const string &nnick){
+	if (nick == nnick){
+		return;
+	}
+
 	string oldnick = nick;
 	nick = nnick;
 	auto roomp = room.lock();
 
 	PacketStatus spack(self.lock());
 	if (!oldnick.empty()){
-		spack.status = Member::Status::nick_change;
-		spack.data = oldnick;
+		if (nick.empty()){
+			spack.status = Member::Status::offline;
+			spack.name = oldnick;
+		} else {
+			spack.status = Member::Status::nick_change;
+			spack.data = oldnick;
+		}
 	}
 
 	roomp->sendPacketToAll(spack);
