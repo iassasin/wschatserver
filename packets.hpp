@@ -43,6 +43,7 @@ public:
 	string from_login;
 	uint from_id;
 	uint to_id;
+	bool dostyle;
 
 	PacketMessage();
 	PacketMessage(MemberPtr member, const string &msg) : PacketMessage(member, msg, time(nullptr)){}

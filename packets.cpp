@@ -35,6 +35,7 @@ PacketMessage::PacketMessage(){
 	msgtime = 0;
 	from_id = 0;
 	to_id = 0;
+	dostyle = false;
 }
 
 PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &tm) : PacketMessage(){
@@ -71,6 +72,7 @@ Json::Value PacketMessage::serialize() const {
 	obj["from_login"] = from_login;
 	obj["from"] = from_id;
 	obj["to"] = to_id;
+	obj["dostyle"] = dostyle;
 	if (message.size() > 30000){
 		obj["message"] = string(message, 0, 30000);
 	} else {
@@ -147,7 +149,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					"/help\tвсе понятно\n"
 					"/nick <новый ник>\tсменить ник\n"
 					"/gender [f|m]\tсменить пол\n"
-					"/color <цвет в hex-формате>\tсменить цвет. Например: #f00 (красный), #f0f000 (оттенок розового). Допускается не писать знак #.\n"
+					"/color <цвет в hex-формате>\tсменить цвет. Например: #f00 (красный), #f0f000 (оттенок розового). Допускается не писать знак #\n"
+					"/me <сообщение>\tнаписать сообщение-действие от своего лица"
 					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
 			client->sendPacket(syspack);
 		}
@@ -227,10 +230,14 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				}
 			}
 		}
-		else if (cmd == "msg"){
-			if (!member->hasNick()){
-				badcmd = true;
-			} else {
+		else {
+			badcmd = true;
+		}
+
+		if (badcmd && member->hasNick()){
+			badcmd = false;
+
+			if (cmd == "msg"){
 				string nick;
 				if (parser.next(r_to_space)){
 					parser.read(0, nick);
@@ -255,14 +262,28 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					}
 				}
 			}
-		}
-		else {
-			badcmd = true;
+			else if (cmd == "me"){
+				string smsg;
+				if (parser.next(r_to_end)){
+					parser.read(0, smsg);
+				}
+
+				if (regex_match(smsg, regex("\\s*"))){
+					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
+				} else {
+					PacketMessage pmsg(member, smsg);
+					pmsg.dostyle = true;
+					room->sendPacketToAll(pmsg);
+				}
+			}
+			else {
+				badcmd = true;
+			}
 		}
 	}
 
 	if (badcmd){
-		syspack.message = "Такая команда не существует";
+		syspack.message = "Такая команда не существует или вы не вошли в чат";
 		client->sendPacket(syspack);
 	}
 
