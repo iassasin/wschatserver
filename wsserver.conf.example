@@ -1,0 +1,19 @@
+{
+	"port": 8080,
+
+	"ssl": {
+		"certificate": "cert/fullchain.pem",
+		"private_key": "cert/privkey.pem"
+	},
+	
+	"memcache": {
+		"host": "localhost",
+		"port": 11211
+	},
+
+	"database": {
+		"host": "tcp://localhost:3306",
+		"user": "user",
+		"password": "pass"
+	}
+}
