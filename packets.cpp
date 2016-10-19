@@ -134,7 +134,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	regex_parser parser(msg);
 	regex r_cmd("^/([^\\s]+)");
 	regex r_spaces("^\\s+");
-	regex r_to_end("^.+$");
+//	regex r_to_end("^[.\\s\\S]+$");
 	regex r_to_space("^[^\\s]+");
 	regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
 
@@ -150,15 +150,12 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					"/nick <новый ник>\tсменить ник\n"
 					"/gender [f|m]\tсменить пол\n"
 					"/color <цвет в hex-формате>\tсменить цвет. Например: #f00 (красный), #f0f000 (оттенок розового). Допускается не писать знак #\n"
-					"/me <сообщение>\tнаписать сообщение-действие от своего лица"
+					"/me <сообщение>\tнаписать сообщение-действие от своего лица\n"
 					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
 			client->sendPacket(syspack);
 		}
 		else if (cmd == "nick"){
-			string nick;
-			if (parser.next(r_to_end)){
-				parser.read(0, nick);
-			}
+			string nick = parser.suffix();
 
 			cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << client->getIP() << ")" << endl;
 			if (nick.empty() || regex_match(nick, regex("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
@@ -174,10 +171,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			}
 		}
 		else if (cmd == "kick" && client->isAdmin()){
-			string nick;
-			if (parser.next(r_to_end)){
-				parser.read(0, nick);
-			}
+			string nick = parser.suffix();
 
 			auto m = room->findMemberByNick(nick);
 			if (m){
@@ -244,8 +238,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				}
 
 				string smsg;
-				if (parser.next(r_spaces) && parser.next(r_to_end)){
-					parser.read(0, smsg);
+				if (parser.next(r_spaces)){
+					smsg = parser.suffix();
 				}
 
 				if (regex_match(smsg, regex("\\s*"))){
@@ -263,10 +257,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				}
 			}
 			else if (cmd == "me"){
-				string smsg;
-				if (parser.next(r_to_end)){
-					parser.read(0, smsg);
-				}
+				string smsg = parser.suffix();
 
 				if (regex_match(smsg, regex("\\s*"))){
 					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));

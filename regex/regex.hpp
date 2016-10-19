@@ -44,6 +44,8 @@ public:
 	operator bool (){ return valid(); }
 	
 	void set_input(const string &input);
+
+	inline string suffix(){ return _match.suffix(); }
 	
 	template<typename T>
 	regex_parser &operator >> (T &val){
