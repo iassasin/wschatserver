@@ -61,6 +61,10 @@ void PacketMessage::deserialize(const Json::Value &obj){
 	target = obj["target"].asString();
 	to_id = obj["to"].asUInt();
 	msgtime = obj["time"].asUInt64();
+
+	if (message.size() > 10000){
+		message = string(message, 0, 10000);
+	}
 }
 
 Json::Value PacketMessage::serialize() const {
@@ -73,8 +77,8 @@ Json::Value PacketMessage::serialize() const {
 	obj["from"] = from_id;
 	obj["to"] = to_id;
 	obj["dostyle"] = dostyle;
-	if (message.size() > 30000){
-		obj["message"] = string(message, 0, 30000);
+	if (message.size() > 10000){
+		obj["message"] = string(message, 0, 10000);
 	} else {
 		obj["message"] = message;
 	}
