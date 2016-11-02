@@ -62,6 +62,7 @@ void PacketMessage::deserialize(const Json::Value &obj){
 	to_id = obj["to"].asUInt();
 	msgtime = obj["time"].asUInt64();
 
+	message = regex_replace(message, regex("\n{3,}"), "\n\n\n");
 	if (message.size() > 10000){
 		message = string(message, 0, 10000);
 	}
