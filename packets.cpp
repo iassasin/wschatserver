@@ -161,6 +161,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 		}
 		else if (cmd == "nick"){
 			string nick = parser.suffix();
+			nick = regex_replace(regex_replace(nick, regex("^\\s+"), ""), regex("\\s+$"), "");
 
 			cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << client->getIP() << ")" << endl;
 			if (nick.empty() || regex_match(nick, regex("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
