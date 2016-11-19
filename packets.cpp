@@ -316,7 +316,7 @@ void PacketOnlineList::process(Client &client){
 		return;
 	}
 
-	list.clear();
+	list = Json::Value(Json::arrayValue);
 	auto members = room->getMembers();
 	for (MemberPtr m : members){
 		if (!m->getNick().empty()){
@@ -448,6 +448,12 @@ PacketJoin::PacketJoin(){
 	member_id = 0;
 }
 
+PacketJoin::PacketJoin(MemberPtr member) : PacketJoin(){
+	target = member->getRoom()->getName();
+	member_id = member->getId();
+	login = member->getNick();
+}
+
 PacketJoin::~PacketJoin(){
 
 }
@@ -480,11 +486,7 @@ void PacketJoin::process(Client &client){
 
 	auto member = client.joinRoom(room);
 	if (member){
-		login = member->getNick();
-		member_id = member->getId();
-		client.sendPacket(*this);
-
-		if (login.empty()){
+		if (member->getNick().empty()){
 			client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
 		}
 	}
@@ -494,6 +496,10 @@ void PacketJoin::process(Client &client){
 
 PacketLeave::PacketLeave(){
 	type = Type::leave;
+}
+
+PacketLeave::PacketLeave(string targ) : PacketLeave(){
+	target = targ;
 }
 
 PacketLeave::~PacketLeave(){

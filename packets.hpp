@@ -118,6 +118,7 @@ public:
 	string login;
 
 	PacketJoin();
+	PacketJoin(MemberPtr member);
 	virtual ~PacketJoin();
 
 	virtual void deserialize(const Json::Value &);
@@ -132,6 +133,7 @@ public:
 	string target;
 
 	PacketLeave();
+	PacketLeave(string targ);
 	virtual ~PacketLeave();
 
 	virtual void deserialize(const Json::Value &);

@@ -145,6 +145,8 @@ MemberPtr Room::addMember(ClientPtr user){
 
 	auto res = members.insert(m);
 
+	user->sendPacket(PacketJoin(m));
+
 	for (const string &s : getHistory()){
 		user->sendRawData(s);
 	}
@@ -165,6 +167,9 @@ bool Room::removeMember(ClientPtr user){
 	if (!m->getNick().empty()){
 		sendPacketToAll(PacketStatus(m, Member::Status::offline));
 	}
+
+	user->sendPacket(PacketLeave(name));
+
 	return members.erase(m) > 0;
 }
 
