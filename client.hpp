@@ -75,9 +75,11 @@ public:
 	void sendPacket(const Packet &);
 	void sendRawData(const string &data);
 
-	bool isAdmin(){
+	inline bool isAdmin(){
 		return uid == 1 || uid == 2;
 	}
+
+	inline bool isGuest(){ return uid <= 0; }
 };
 
 #endif

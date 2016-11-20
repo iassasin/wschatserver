@@ -75,7 +75,7 @@ public:
 class Room {
 private:
 	Server *server;
-	uint ownerId;
+	int ownerId;
 	set<MemberPtr> members;
 	string name;
 	list<string> history;
@@ -91,8 +91,8 @@ public:
 
 	void setSelfPtr(weak_ptr<Room> ptr){ self = ptr; }
 
-	void setOwner(uint nid);
-	inline uint getOwner(){ return ownerId; }
+	void setOwner(int nid);
+	inline int getOwner(){ return ownerId; }
 
 	string getName(){ return name; }
 	void setName(string nm){ name = nm; }

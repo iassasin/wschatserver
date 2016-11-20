@@ -141,5 +141,35 @@ public:
 	virtual void process(Client &);
 };
 
+class PacketCreateRoom : public Packet {
+private:
+
+public:
+	string target;
+
+	PacketCreateRoom();
+	PacketCreateRoom(string targ);
+	virtual ~PacketCreateRoom();
+
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
+	virtual void process(Client &);
+};
+
+class PacketRemoveRoom : public Packet {
+private:
+
+public:
+	string target;
+
+	PacketRemoveRoom();
+	PacketRemoveRoom(string targ);
+	virtual ~PacketRemoveRoom();
+
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
+	virtual void process(Client &);
+};
+
 #endif
 

@@ -146,19 +146,25 @@ void Server::kick(ClientPtr client){
 RoomPtr Server::createRoom(string name){
 	auto rm = getRoomByName(name);
 	if (rm)
-		return rm;
+		return nullptr;
 
 	rm = make_shared<Room>(this);
 	rm->setName(name);
 	rm->setSelfPtr(rm);
 	rooms.insert(rm);
+	rm->onCreate();
+
 	return rm;
 }
 
 bool Server::removeRoom(string name){
 	auto rm = getRoomByName(name);
 	if (rm){
-		return rooms.erase(rm) > 0;
+		bool res = rooms.erase(rm) > 0;
+		if (res){
+			rm->onDestroy();
+		}
+		return res;
 	}
 
 	return false;

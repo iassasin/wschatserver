@@ -121,7 +121,7 @@ MemberPtr Room::findMemberById(uint id){
 	return nullptr;
 }
 
-void Room::setOwner(uint nid){
+void Room::setOwner(int nid){
 	ownerId = nid;
 }
 

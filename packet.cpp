@@ -29,7 +29,10 @@ Packet *Packet::read(const std::string &data){
 		case Type::status:				pack = new PacketStatus(); break;
 		case Type::join:				pack = new PacketJoin(); break;
 		case Type::leave:				pack = new PacketLeave(); break;
+		case Type::create_room:			pack = new PacketCreateRoom(); break;
+		case Type::remove_room:			pack = new PacketRemoveRoom(); break;
 	}
+
 	if (pack){
 		try {
 			pack->deserialize(obj);

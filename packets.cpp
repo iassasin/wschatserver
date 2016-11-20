@@ -528,3 +528,93 @@ void PacketLeave::process(Client &client){
 	client.leaveRoom(room);
 }
 
+//----
+
+PacketCreateRoom::PacketCreateRoom(){
+	type = Type::create_room;
+}
+
+PacketCreateRoom::PacketCreateRoom(string targ) : PacketCreateRoom(){
+	target = targ;
+}
+
+PacketCreateRoom::~PacketCreateRoom(){
+
+}
+
+void PacketCreateRoom::deserialize(const Json::Value &obj){
+	target = obj["target"].asString();
+}
+
+Json::Value PacketCreateRoom::serialize() const {
+	Json::Value obj;
+	obj["type"] = (int) type;
+	obj["target"] = target;
+	return obj;
+}
+
+void PacketCreateRoom::process(Client &client){
+	if (client.isGuest()){
+		client.sendPacket(PacketSystem("", "Гости не могут создавать комнаты"));
+		return;
+	}
+
+	if (!regex_match(target, regex(R"(#[a-zA-Z\d\-_ \[\]\(\)]{3,24})"))){
+		client.sendPacket(PacketSystem("", "Недопустимое имя комнаты"));
+		return;
+	}
+
+	auto server = client.getServer();
+	auto room = server->createRoom(target);
+	if (!room){
+		client.sendPacket(PacketSystem("", "Такая комната уже существует"));
+		return;
+	}
+
+	room->setOwner(client.getID());
+	client.sendPacket(*this);
+}
+
+//----
+
+PacketRemoveRoom::PacketRemoveRoom(){
+	type = Type::remove_room;
+}
+
+PacketRemoveRoom::PacketRemoveRoom(string targ) : PacketRemoveRoom(){
+	target = targ;
+}
+
+PacketRemoveRoom::~PacketRemoveRoom(){
+
+}
+
+void PacketRemoveRoom::deserialize(const Json::Value &obj){
+	target = obj["target"].asString();
+}
+
+Json::Value PacketRemoveRoom::serialize() const {
+	Json::Value obj;
+	obj["type"] = (int) type;
+	obj["target"] = target;
+	return obj;
+}
+
+void PacketRemoveRoom::process(Client &client){
+	auto server = client.getServer();
+	auto room = server->getRoomByName(target);
+
+	if (!room){
+		client.sendPacket(PacketSystem("", "Такая комната уже существует"));
+		return;
+	}
+
+	if (client.isAdmin() || client.getID() == room->getOwner()){
+		server->removeRoom(target);
+		client.sendPacket(*this);
+	} else {
+		client.sendPacket(PacketSystem("", "Вы не можете удалить эту комнату"));
+		return;
+	}
+}
+
