@@ -56,6 +56,7 @@ Json::Value Room::serialize(){
 	val["owner_id"] = ownerId;
 	val["name"] = name;
 
+	val["history"] = Json::Value(Json::arrayValue);
 	auto &hist = val["history"];
 	for (string p : history){
 		hist.append(p);
