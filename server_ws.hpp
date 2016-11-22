@@ -1,6 +1,9 @@
 #ifndef SERVER_WS_HPP
 #define	SERVER_WS_HPP
 
+#define BOOST_COROUTINES_NO_DEPRECATION_WARNING
+#define BOOST_COROUTINE_NO_DEPRECATION_WARNING
+
 #include "crypto.hpp"
 
 #include <boost/asio.hpp>
