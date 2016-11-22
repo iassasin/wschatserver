@@ -160,7 +160,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 
 			if (client->isAdmin() || client->getID() == room->getOwner()){
 				syspack.message += "\n\nМодератор комнаты:\n"
-						"/kick <ник>\nкик игрока с указанным ником\n"
+						"/kick <ник>\tкик игрока с указанным ником\n"
 						"/userlist\tсписок клиентов с ID и IP";
 			}
 
