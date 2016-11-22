@@ -157,6 +157,18 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					"/color <цвет в hex-формате>\tсменить цвет. Например: #f00 (красный), #f0f000 (оттенок розового). Допускается не писать знак #\n"
 					"/me <сообщение>\tнаписать сообщение-действие от своего лица\n"
 					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
+
+			if (client->isAdmin() || client->getID() == room->getOwner()){
+				syspack.message += "\n\nМодератор комнаты:\n"
+						"/kick <ник>\nкик игрока с указанным ником\n"
+						"/userlist\tсписок клиентов с ID и IP";
+			}
+
+			if (client->isAdmin()){
+				syspack.message += "\n\nАдмин:\n"
+						"/roomlist\tсписок комнат";
+			}
+
 			client->sendPacket(syspack);
 		}
 		else if (cmd == "nick"){
@@ -173,17 +185,6 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				}
 			} else {
 				syspack.message = "Ник должен содержать только латинские буквоцифры и _-, и не длинее 24 символов";
-				client->sendPacket(syspack);
-			}
-		}
-		else if (cmd == "kick" && client->isAdmin()){
-			string nick = parser.suffix();
-
-			auto m = room->findMemberByNick(nick);
-			if (m){
-				room->kickMember(m);
-			} else {
-				syspack.message = "Такой пользователь не найден";
 				client->sendPacket(syspack);
 			}
 		}
@@ -232,6 +233,56 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 		}
 		else {
 			badcmd = true;
+		}
+
+		if (badcmd && (client->isAdmin() || (client->getID() != 0 && client->getID() == room->getOwner()))){
+			badcmd = false;
+
+			if (cmd == "kick"){
+				string nick = parser.suffix();
+
+				auto m = room->findMemberByNick(nick);
+				if (m){
+					room->kickMember(m);
+				} else {
+					syspack.message = "Такой пользователь не найден";
+					client->sendPacket(syspack);
+				}
+			}
+			else if (cmd == "userlist"){
+				string users = "Пользователи:\n";
+
+				for (auto m : room->getMembers()){
+					auto mc = m->getClient();
+					users += "#" + to_string(m->getId()) + " " + m->getNick() + " (uid " + to_string(mc->getID()) + ", " + mc->getIP() + ")\n";
+				}
+
+				syspack.message = users;
+				client->sendPacket(syspack);
+			}
+			else {
+				badcmd = true;
+			}
+		}
+
+		if (badcmd && client->isAdmin()){
+			badcmd = false;
+
+			if (cmd == "roomlist"){
+				auto server = client->getServer();
+
+				string rooms = "Комнаты:\n";
+
+				for (auto r : server->getRooms()){
+					rooms += to_string(r->getOwner()) + ": " + r->getName() + "\n";
+				}
+
+				syspack.message = rooms;
+				client->sendPacket(syspack);
+			}
+			else {
+				badcmd = true;
+			}
 		}
 
 		if (badcmd && member->hasNick()){
@@ -312,7 +363,7 @@ Json::Value PacketOnlineList::serialize() const {
 void PacketOnlineList::process(Client &client){
 	auto room = client.getRoomByName(target);
 	if (!room){
-		client.sendPacket(PacketSystem("", string("Не удалось получить список онлайна комнаты \"") + target + "\""));
+		client.sendPacket(PacketSystem("", string("Не удалось получить список онлайна комнаты \"") + target + "\"")); //TODO: коды ошибок
 		return;
 	}
 

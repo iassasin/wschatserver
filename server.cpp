@@ -125,14 +125,13 @@ ClientPtr Server::getClientByID(int uid){
 	return ClientPtr();
 }
 
-vector<string> Server::getClients(){
-	vector<string> res;
+vector<ClientPtr> Server::getClients(){
+	vector<ClientPtr> res;
 	for (auto clip : clients){
-		auto cli = clip.second;
-		if (!cli->getName().empty()){
-			res.push_back(cli->getName());
-		}
+		auto &cli = clip.second;
+		res.push_back(cli);
 	}
+
 	return res;
 }
 

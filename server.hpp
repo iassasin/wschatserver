@@ -45,7 +45,8 @@ public:
 	ClientPtr getClientByName(string name);
 	ClientPtr getClientByID(int uid);
 	
-	vector<string> getClients();
+	vector<ClientPtr> getClients();
+	inline const set<RoomPtr> &getRooms(){ return rooms; }
 
 	RoomPtr createRoom(string name);
 	bool removeRoom(string name);
