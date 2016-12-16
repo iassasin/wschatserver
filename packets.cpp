@@ -428,6 +428,7 @@ void PacketAuth::process(Client &client){
 			} catch (SQLException &e){
 				cout << date("[%H:%M:%S] ") << "# ERR: " << e.what() << endl;
 				cout << "# ERR: SQLException code " << e.getErrorCode() << ", SQLState: " << e.getSQLState() << endl;
+				db.reconnect();
 				client.sendPacket(PacketSystem("", "Ошибка подключения к БД при авторизации!"));
 			}
 		}
