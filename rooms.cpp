@@ -2,6 +2,35 @@
 #include "packets.hpp"
 #include <ctime>
 
+MemberInfo::MemberInfo(){
+
+}
+
+MemberInfo::MemberInfo(MemberPtr member){
+	user_id = member->getClient()->getID();
+	nick = member->getNick();
+	girl = member->isGirl();
+	color = member->getColor();
+}
+
+Json::Value MemberInfo::serialize(){
+	Json::Value v(Json::objectValue);
+
+	v["user_id"] = user_id;
+	v["nick"] = nick;
+	v["girl"] = girl;
+	v["color"] = color;
+
+	return v;
+}
+
+void MemberInfo::deserialize(const Json::Value &val){
+	user_id = val["user_id"].asUInt();
+	nick = val["nick"].asString();
+	girl = val["girl"].asBool();
+	color = val["color"].asString();
+}
+
 void Member::sendPacket(const Packet &pack){
 	client->sendPacket(pack);
 }
@@ -62,6 +91,12 @@ Json::Value Room::serialize(){
 		hist.append(p);
 	}
 
+	val["members_info"] = Json::Value(Json::arrayValue);
+	auto &mi = val["members_info"];
+	for (auto &p : membersInfo){
+		mi.append(p.second.serialize());
+	}
+
 	return val;
 }
 
@@ -72,6 +107,13 @@ void Room::deserialize(const Json::Value &val){
 	history.clear();
 	for (auto &v : val["history"]){
 		history.push_back(v.asString());
+	}
+
+	membersInfo.clear();
+	for (auto &v : val["members_info"]){
+		MemberInfo info;
+		info.deserialize(v);
+		membersInfo[info.user_id] = info;
 	}
 }
 
@@ -140,9 +182,18 @@ MemberPtr Room::addMember(ClientPtr user){
 	auto m = make_shared<Member>(ptr, user);
 	m->setSelfPtr(m);
 	m->id = genNextMemberId();
-	m->nick = user->getName();
-	m->girl = user->isGirl();
-	m->color = user->getColor();
+
+	uint uid = user->getID();
+	if (user->isGuest() || membersInfo.find(uid) == membersInfo.end()){
+		m->nick = user->getName();
+		m->girl = user->isGirl();
+		m->color = user->getColor();
+	} else {
+		MemberInfo info = membersInfo[uid];
+		m->nick = info.nick;
+		m->girl = info.girl;
+		m->color = info.color;
+	}
 
 	auto res = members.insert(m);
 
@@ -170,6 +221,11 @@ bool Room::removeMember(ClientPtr user){
 	}
 
 	user->sendPacket(PacketLeave(name));
+
+	auto cli = m->getClient();
+	if (!cli->isGuest()){
+		membersInfo[cli->getID()] = MemberInfo(m);
+	}
 
 	return members.erase(m) > 0;
 }

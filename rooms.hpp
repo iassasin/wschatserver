@@ -13,6 +13,7 @@ using RoomPtr = std::shared_ptr<Room>;
 #include <string>
 #include <cstdint>
 #include <set>
+#include <map>
 #include <list>
 #include <jsoncpp/json/json.h>
 
@@ -24,6 +25,20 @@ using std::string;
 using std::set;
 using std::list;
 using std::weak_ptr;
+using std::unordered_map;
+
+struct MemberInfo {
+	uint user_id;
+	string nick;
+	bool girl;
+	string color;
+
+	MemberInfo();
+	MemberInfo(MemberPtr);
+
+	Json::Value serialize();
+	void deserialize(const Json::Value &);
+};
 
 class Member {
 public:
@@ -77,6 +92,7 @@ private:
 	Server *server;
 	int ownerId;
 	set<MemberPtr> members;
+	unordered_map<uint, MemberInfo> membersInfo;
 	string name;
 	list<string> history;
 	weak_ptr<Room> self;
