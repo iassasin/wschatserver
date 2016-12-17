@@ -169,15 +169,6 @@ void Room::setOwner(int nid){
 }
 
 MemberPtr Room::addMember(ClientPtr user){
-	string nick = user->getName();
-
-	if (!nick.empty()){
-		auto member = findMemberByNick(nick);
-		if (member){
-			kickMember(member);
-		}
-	}
-
 	auto ptr = self.lock();
 	auto m = make_shared<Member>(ptr, user);
 	m->setSelfPtr(m);
@@ -195,12 +186,29 @@ MemberPtr Room::addMember(ClientPtr user){
 		m->color = info.color;
 	}
 
+	bool warn = false;
+	string nick;
+	auto member = findMemberByNick(m->nick);
+	if (member){
+		if (m->nick == user->getName()){
+			kickMember(member);
+		} else {
+			warn = true;
+			nick = m->nick;
+			m->nick = "";
+		}
+	}
+
 	auto res = members.insert(m);
 
 	user->sendPacket(PacketJoin(m));
 
 	for (const string &s : getHistory()){
 		user->sendRawData(s);
+	}
+
+	if (warn){
+		m->sendPacket(PacketSystem(name, string("Выбранный вами ранее ник (") + nick + ") занят, выберите другой ник"));
 	}
 
 	if (!m->getNick().empty()){
