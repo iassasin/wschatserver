@@ -58,6 +58,11 @@ void Member::setNick(const string &nnick){
 	roomp->sendPacketToAll(spack);
 }
 
+bool Member::isAdmin(){ return client->isAdmin(); }
+bool Member::isOwner(){ return !room.expired() && client->getID() == room.lock()->getOwner(); }
+bool Member::isModer(){ return false; }
+
+
 Room::Room(Server *srv){
 	server = srv;
 	ownerId = -1;

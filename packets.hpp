@@ -98,6 +98,8 @@ public:
 	string color;
 	string name;
 	string data;
+	bool is_owner;
+	bool is_moder;
 	
 	PacketStatus();
 	PacketStatus(MemberPtr member, Member::Status stat, const string &data = "");

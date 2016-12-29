@@ -84,6 +84,10 @@ public:
 	Status getStatus(){ return status; }
 	void setStatus(Status stat){ status = stat; }
 
+	bool isAdmin();
+	bool isOwner();
+	bool isModer();
+
 	void sendPacket(const Packet &pack);
 };
 

@@ -443,6 +443,8 @@ PacketStatus::PacketStatus(){
 	member_id = 0;
 	girl = false;
 	user_id = 0;
+	is_owner = false;
+	is_moder = false;
 }
 
 PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &dt)
@@ -456,6 +458,8 @@ PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &
 	color = member->getColor();
 	status = stat;
 	data = dt;
+	is_owner = is_moder = member->isOwner();
+	if (!is_moder) is_moder = member->isModer();
 }
 
 PacketStatus::PacketStatus(MemberPtr member, const string &dt)
@@ -486,6 +490,8 @@ Json::Value PacketStatus::serialize() const {
 	obj["girl"] = girl;
 	obj["color"] = color;
 	obj["data"] = data;
+	obj["is_owner"] = is_owner;
+	obj["is_moder"] = is_moder;
 	return obj;
 }
 
