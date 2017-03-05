@@ -412,23 +412,30 @@ void PacketAuth::process(Client &client){
 
 		string id;
 		if (cache.get(string("chat-key-") + ukey, id)){
-			try {
-				int uid = stoi(id.c_str());
-	
-				auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
-				ps->setInt(1, uid);
-				auto rs = as_unique(ps->executeQuery());
-				if (rs->next()){
-					int gid = rs->getInt(2);
-					client.setID(uid);
-					client.setName(rs->getString(1));
-					client.setGirl(gid == 4);
-					client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
+			int tries = 3;
+			while (tries--){
+				try {
+					int uid = stoi(id.c_str());
+
+					auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
+					ps->setInt(1, uid);
+					auto rs = as_unique(ps->executeQuery());
+					if (rs->next()){
+						int gid = rs->getInt(2);
+						client.setID(uid);
+						client.setName(rs->getString(1));
+						client.setGirl(gid == 4);
+						client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
+					}
+					break;
+				} catch (SQLException &e){
+					cout << date("[%H:%M:%S] ") << "# ERR: " << e.what() << endl;
+					cout << "# ERR: SQLException code " << e.getErrorCode() << ", SQLState: " << e.getSQLState() << endl;
+					db.reconnect();
 				}
-			} catch (SQLException &e){
-				cout << date("[%H:%M:%S] ") << "# ERR: " << e.what() << endl;
-				cout << "# ERR: SQLException code " << e.getErrorCode() << ", SQLState: " << e.getSQLState() << endl;
-				db.reconnect();
+			}
+
+			if (tries < 0){
 				client.sendPacket(PacketSystem("", "Ошибка подключения к БД при авторизации!"));
 			}
 		}
