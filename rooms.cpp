@@ -151,7 +151,7 @@ MemberPtr Room::findMemberByClient(ClientPtr client){
 
 MemberPtr Room::findMemberByNick(string nick){
 	for (MemberPtr m : members){
-		if (m->nick == nick){
+		if (!m->nick.empty() && m->nick == nick){
 			return m;
 		}
 	}
