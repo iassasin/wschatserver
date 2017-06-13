@@ -33,6 +33,13 @@ public:
 };
 
 class PacketMessage : public Packet {
+public:
+	enum class Style : uint8_t {
+		message = 0,
+		me,
+		event,
+		offtop,
+	};
 private:
 	bool processCommand(MemberPtr member, RoomPtr room, const string &msg);
 public:
@@ -43,7 +50,7 @@ public:
 	string from_login;
 	uint from_id;
 	uint to_id;
-	bool dostyle;
+	Style style;
 
 	PacketMessage();
 	PacketMessage(MemberPtr member, const string &msg) : PacketMessage(member, msg, time(nullptr)){}

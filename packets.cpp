@@ -35,7 +35,7 @@ PacketMessage::PacketMessage(){
 	msgtime = 0;
 	from_id = 0;
 	to_id = 0;
-	dostyle = false;
+	style = Style::message;
 }
 
 PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &tm) : PacketMessage(){
@@ -77,7 +77,7 @@ Json::Value PacketMessage::serialize() const {
 	obj["from_login"] = from_login;
 	obj["from"] = from_id;
 	obj["to"] = to_id;
-	obj["dostyle"] = dostyle;
+	obj["style"] = (uint) style;
 	if (message.size() > 9500){
 		obj["message"] = string(message, 0, 9500);
 	} else {
@@ -313,14 +313,19 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					}
 				}
 			}
-			else if (cmd == "me"){
+			else if (cmd == "me" || cmd == "do" || cmd == "n"){
 				string smsg = parser.suffix();
 
 				if (regex_match(smsg, regex("\\s*"))){
 					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
 				} else {
 					PacketMessage pmsg(member, smsg);
-					pmsg.dostyle = true;
+					switch (cmd[0]){
+						case 'm': pmsg.style = Style::me; break;
+						case 'd': pmsg.style = Style::event; break;
+						case 'n': pmsg.style = Style::offtop; break;
+						default: pmsg.style = Style::message; break;
+					}
 					room->sendPacketToAll(pmsg);
 				}
 			}
