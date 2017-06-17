@@ -180,5 +180,17 @@ public:
 	virtual void process(Client &);
 };
 
+class PacketPing : public Packet {
+private:
+
+public:
+	PacketPing();
+	virtual ~PacketPing();
+
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
+	virtual void process(Client &);
+};
+
 #endif
 

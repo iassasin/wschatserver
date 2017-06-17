@@ -690,3 +690,26 @@ void PacketRemoveRoom::process(Client &client){
 	}
 }
 
+//----
+
+PacketPing::PacketPing(){
+	type = Type::ping;
+}
+
+PacketPing::~PacketPing(){
+
+}
+
+void PacketPing::deserialize(const Json::Value &obj){
+
+}
+
+Json::Value PacketPing::serialize() const {
+	Json::Value obj;
+	obj["type"] = (int) type;
+	return obj;
+}
+
+void PacketPing::process(Client &client){
+
+}

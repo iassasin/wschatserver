@@ -31,6 +31,7 @@ Packet *Packet::read(const std::string &data){
 		case Type::leave:				pack = new PacketLeave(); break;
 		case Type::create_room:			pack = new PacketCreateRoom(); break;
 		case Type::remove_room:			pack = new PacketRemoveRoom(); break;
+		case Type::ping:				pack = new PacketPing(); break;
 	}
 
 	if (pack){

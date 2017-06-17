@@ -14,7 +14,19 @@ class Packet {
 private:
 	
 public:
-	enum class Type : int { bad=0, system, message, online_list, auth, status, join, leave, create_room, remove_room};
+	enum class Type : int {
+		bad=0,
+		system,
+		message,
+		online_list,
+		auth,
+		status,
+		join,
+		leave,
+		create_room,
+		remove_room,
+		ping,
+	};
 	
 	Type type;
 	

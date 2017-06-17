@@ -26,6 +26,7 @@ private:
 	bool _isGirl;
 	string color;
 public:
+	time_t lastPacketTime;
 	time_t lastMessageTime;
 	int messageCounter;
 
@@ -34,6 +35,7 @@ public:
 		connection = conn;
 		uid = 0;
 		lastMessageTime = time(nullptr);
+		lastPacketTime = lastMessageTime;
 		messageCounter = 0;
 		_isGirl = false;
 		color = "gray";

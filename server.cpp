@@ -50,7 +50,28 @@ Server::Server(int port)
 			clients.erase(connection);
 		}
 	};
-	
+
+	server.runWithInterval(pingInterval, [&]{
+		time_t cur = time(nullptr);
+		vector<ClientPtr> toKick;
+
+		for (auto c : clients){
+			auto &cli = c.second;
+
+			if (cur - cli->lastPacketTime > connectTimeout){
+				toKick.push_back(cli);
+			}
+			else if (cur - cli->lastPacketTime > pingTimeout){
+				//cout << date("[%H:%M:%S] ") << "Server: Sending ping to " << cli->getName() << " [" << cli->getIP() << "]" << endl;
+				cli->sendPacket(PacketPing());
+			}
+		}
+
+		for (auto cli : toKick){
+			kick(cli);
+			cout << date("[%H:%M:%S] ") << "Server: Kicked by inactive: " << cli->getName() << " [" << cli->getIP() << "]" << endl;
+		}
+	});
 }
 
 void Server::start(){

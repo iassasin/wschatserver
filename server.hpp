@@ -2,11 +2,11 @@
 #define SERVER_H_
 
 #include <jsoncpp/json/json.h>
-#include "server_wss.hpp"
+#include "server_wss_ex.hpp"
 
 class Server;
 using WSServerBase = SimpleWeb::SocketServerBase<SimpleWeb::WSS>;
-using WSServer = SimpleWeb::SocketServer<SimpleWeb::WSS>;
+using WSServer = WebSocketServerEx;
 
 #include <set>
 
@@ -23,6 +23,10 @@ class Server {
 public:
 	using SendStream = WSServerBase::SendStream;
 private:
+	static const int connectTimeout = 5*60;
+	static const int pingTimeout = 3*60;
+	static const int pingInterval = 30000;
+
 	map<shared_ptr<WSServerBase::Connection>, ClientPtr> clients;
 	WSServer server;
 

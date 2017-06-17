@@ -8,6 +8,7 @@ void Client::onPacket(string msg){
 //	cout << date("[%H:%M:%S] ") << "Receive: " << msg << endl;
 	unique_ptr<Packet> pack(Packet::read(msg));
 	if (pack){
+		lastPacketTime = time(nullptr);
 		pack->process(*this);
 	} else {
 		cout << date("[%H:%M:%S] ") << "Dropped invalid packet: " << msg << endl;
