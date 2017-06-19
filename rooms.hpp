@@ -42,7 +42,16 @@ struct MemberInfo {
 
 class Member {
 public:
-	enum class Status : int { bad = 0, offline, online, away, nick_change, gender_change, color_change };
+	enum class Status : int {
+		bad = 0,
+		offline,
+		online,
+		away,
+		nick_change,
+		gender_change,
+		color_change,
+		back,
+	};
 private:
 	friend class Room;
 

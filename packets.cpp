@@ -487,10 +487,7 @@ PacketStatus::~PacketStatus(){
 }
 
 void PacketStatus::deserialize(const Json::Value &obj){
-	target = obj["target"].asString();
 	status = (Member::Status) obj["status"].asInt();
-	name = obj["name"].asString();
-	data = obj["data"].asString();
 }
 
 Json::Value PacketStatus::serialize() const {
@@ -510,7 +507,16 @@ Json::Value PacketStatus::serialize() const {
 }
 
 void PacketStatus::process(Client &client){
-
+	if (status == Member::Status::away || status == Member::Status::back){
+		auto nstat = status == Member::Status::back ? Member::Status::online : Member::Status::away;
+		for (auto room : client.getConnectedRooms()){
+			auto mem = room->findMemberByClient(client.getSelfPtr());
+			if (!mem->getNick().empty()){
+				mem->setStatus(nstat);
+				room->sendPacketToAll(PacketStatus(mem, status, ""));
+			}
+		}
+	}
 }
 
 //----

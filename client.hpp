@@ -73,6 +73,7 @@ public:
 	void leaveRoom(RoomPtr room);
 
 	RoomPtr getRoomByName(const string &name);
+	inline const set<RoomPtr> &getConnectedRooms(){ return rooms; }
 
 	void sendPacket(const Packet &);
 	void sendRawData(const string &data);
