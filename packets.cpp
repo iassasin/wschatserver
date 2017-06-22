@@ -379,9 +379,6 @@ void PacketOnlineList::process(Client &client){
 	for (MemberPtr m : members){
 		if (!m->getNick().empty()){
 			PacketStatus pack(m);
-			if (client.isAdmin()){
-				pack.user_id = m->getClient()->getID();
-			}
 			list.append(pack.serialize());
 		}
 	}
@@ -468,6 +465,7 @@ PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &
 	target = room->getName();
 	name = member->getNick();
 	member_id = member->getId();
+	user_id = member->getClient()->getID();
 	girl = member->isGirl();
 	color = member->getColor();
 	status = stat;
@@ -513,7 +511,7 @@ void PacketStatus::process(Client &client){
 			auto mem = room->findMemberByClient(client.getSelfPtr());
 			if (!mem->getNick().empty()){
 				mem->setStatus(nstat);
-				room->sendPacketToAll(PacketStatus(mem, status, ""));
+				room->sendPacketToAll(PacketStatus(mem, status));
 			}
 		}
 	}
