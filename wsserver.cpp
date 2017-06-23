@@ -11,7 +11,7 @@ static void save_state(){
 		Config::writeToFile("rooms.dat", server->serialize());
 		cout << "Server state saved" << endl;
 	} catch (exception &e){
-		cerr << "Exception while loading old server state:" << endl
+		cerr << "Exception while saving old server state:" << endl
 				<< e.what();
 	}
 }
@@ -20,11 +20,11 @@ static void sighandler(int signum){
 	cout << "Received signal " << signum << endl;
 	server->stop();
 	save_state();
-	exit(0);
+	exit(signum != SIGTERM ? signum : 0);
 }
 
 int main() {
-	if (signal(SIGTERM, sighandler) == SIG_ERR || signal(SIGINT, sighandler) == SIG_ERR){
+	if (signal(SIGTERM, sighandler) == SIG_ERR || signal(SIGINT, sighandler) == SIG_ERR || signal(SIGABRT, sighandler) == SIG_ERR){
 		cerr << "Can't set signals. Aborting." << endl;
 		return 1;
 	}

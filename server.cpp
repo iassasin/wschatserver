@@ -16,9 +16,18 @@ Server::Server(int port)
 	auto& chat = server.endpoint["^/chat/?$"];
 	
 	chat.onmessage = [&](auto connection, auto message) {
-	    if (clients.find(connection) != clients.end()){
-	    	clients[connection]->onPacket(message->string());
-	    }
+		string msg = message->string();
+		try {
+			if (clients.find(connection) != clients.end()){
+				clients[connection]->onPacket(msg);
+			}
+		} catch (const exception &e){
+			cout << date("[%H:%M:%S] ") << "Server: " << e.what() << ". While processing message:" << endl
+					 << msg << endl;
+		} catch (...){
+			 cout << date("[%H:%M:%S] ") << "Server: unknown error while processing message:" << endl
+					 << msg << endl;
+		}
 	};
 	
 	chat.onopen = [&, this](auto connection) {
