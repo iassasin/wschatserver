@@ -40,9 +40,15 @@ void Member::setNick(const string &nnick){
 		return;
 	}
 
+	auto roomp = room.lock();
+
+	if (!isAdmin() && roomp->getBannedNicks().find(nnick) != roomp->getBannedNicks().end()){
+		sendPacket(PacketSystem(roomp->getName(), "Данный ник забанен, выберите другой"));
+		return;
+	}
+
 	string oldnick = nick;
 	nick = nnick;
-	auto roomp = room.lock();
 
 	PacketStatus spack(self.lock());
 	if (!oldnick.empty()){
@@ -59,8 +65,8 @@ void Member::setNick(const string &nnick){
 }
 
 bool Member::isAdmin(){ return client->isAdmin(); }
-bool Member::isOwner(){ return !room.expired() && client->getID() == room.lock()->getOwner(); }
-bool Member::isModer(){ return false; }
+bool Member::isOwner(){ return client->isAdmin() || client->getID() != 0 && !room.expired() && client->getID() == room.lock()->getOwner(); }
+bool Member::isModer(){ return isOwner() || !room.expired() && false; }
 
 
 Room::Room(Server *srv){
@@ -86,6 +92,14 @@ void Room::onDestroy(){
 }
 
 Json::Value Room::serialize(){
+	auto storeSet = [](auto &stg, const string &name, const auto &set){
+		stg[name] = Json::Value(Json::arrayValue);
+		auto &sval = stg[name];
+		for (auto p : set){
+			sval.append(p);
+		}
+	};
+
 	Json::Value val;
 	val["owner_id"] = ownerId;
 	val["name"] = name;
@@ -101,6 +115,10 @@ Json::Value Room::serialize(){
 	for (auto &p : membersInfo){
 		mi.append(p.second.serialize());
 	}
+
+	storeSet(val, "bannedNicks", bannedNicks);
+	storeSet(val, "bannedIps", bannedIps);
+	storeSet(val, "bannedUids", bannedUids);
 
 	return val;
 }
@@ -119,6 +137,21 @@ void Room::deserialize(const Json::Value &val){
 		MemberInfo info;
 		info.deserialize(v);
 		membersInfo[info.user_id] = info;
+	}
+
+	bannedNicks.clear();
+	for (auto &v : val["bannedNicks"]){
+		bannedNicks.insert(v.asString());
+	}
+
+	bannedIps.clear();
+	for (auto &v : val["bannedIps"]){
+		bannedIps.insert(v.asString());
+	}
+
+	bannedUids.clear();
+	for (auto &v : val["bannedUids"]){
+		bannedUids.insert(v.asUInt());
 	}
 }
 
@@ -191,6 +224,11 @@ MemberPtr Room::addMember(ClientPtr user){
 		m->color = info.color;
 	}
 
+	if (!m->isOwner() && bannedNicks.find(m->nick) != bannedNicks.end()){
+		user->sendPacket(PacketSystem("", "Вы были забанены"));
+		return nullptr;
+	}
+
 	bool warn = false;
 	string nick;
 	auto member = findMemberByNick(m->nick);
@@ -213,7 +251,7 @@ MemberPtr Room::addMember(ClientPtr user){
 	}
 
 	if (warn){
-		m->sendPacket(PacketSystem(name, string("Выбранный вами ранее ник (") + nick + ") занят, выберите другой ник"));
+		m->sendPacket(PacketSystem(name, "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
 	}
 
 	if (!m->getNick().empty()){

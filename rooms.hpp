@@ -12,7 +12,7 @@ using RoomPtr = std::shared_ptr<Room>;
 #include <vector>
 #include <string>
 #include <cstdint>
-#include <set>
+#include <unordered_set>
 #include <map>
 #include <list>
 #include <jsoncpp/json/json.h>
@@ -22,7 +22,7 @@ using RoomPtr = std::shared_ptr<Room>;
 
 using std::vector;
 using std::string;
-using std::set;
+using std::unordered_set;
 using std::list;
 using std::weak_ptr;
 using std::unordered_map;
@@ -103,12 +103,17 @@ public:
 class Room {
 private:
 	Server *server;
-	int ownerId;
-	set<MemberPtr> members;
-	unordered_map<uint, MemberInfo> membersInfo;
 	string name;
-	list<string> history;
+	int ownerId;
 	weak_ptr<Room> self;
+
+	unordered_set<MemberPtr> members;
+	unordered_map<uint, MemberInfo> membersInfo;
+	unordered_set<string> bannedNicks;
+	unordered_set<string> bannedIps;
+	unordered_set<uint> bannedUids;
+
+	list<string> history;
 
 	uint nextMemberId;
 
@@ -134,7 +139,18 @@ public:
 	Json::Value serialize();
 	void deserialize(const Json::Value &);
 
-	inline const set<MemberPtr> &getMembers(){ return members; }
+	inline const unordered_set<MemberPtr> &getMembers(){ return members; }
+	inline const unordered_set<string> &getBannedNicks(){ return bannedNicks; }
+	inline const unordered_set<string> &getBannedIps(){ return bannedIps; }
+	inline const unordered_set<uint> &getBannedUids(){ return bannedUids; }
+
+	inline bool banNick(const string &nick){ return bannedNicks.insert(nick).second; }
+	inline bool banIp(const string &ip){ return bannedIps.insert(ip).second; }
+	inline bool banUid(uint uid){ return bannedUids.insert(uid).second; }
+
+	inline bool unbanNick(const string &nick){ return bannedNicks.erase(nick) > 0; }
+	inline bool unbanIp(const string &ip){ return bannedIps.erase(ip) > 0; }
+	inline bool unbanUid(uint uid){ return bannedUids.erase(uid) > 0; }
 
 	MemberPtr addMember(ClientPtr user);
 	bool removeMember(ClientPtr user);

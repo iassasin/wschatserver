@@ -38,10 +38,12 @@ void Client::sendRawData(const string &data){
 
 MemberPtr Client::joinRoom(RoomPtr room){
 	auto ptr = self.lock();
-
-	rooms.insert(room);
 	auto member = room->addMember(ptr);
-	member->setStatus(Member::Status::online);
+
+	if (member){
+		rooms.insert(room);
+		member->setStatus(Member::Status::online);
+	}
 
 	return member;
 }

@@ -178,7 +178,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			nick = regex_replace(regex_replace(nick, regex("^\\s+"), ""), regex("\\s+$"), "");
 
 			cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << client->getIP() << ")" << endl;
-			if (nick.empty() || regex_match(nick, regex("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){
+			if (nick.empty() || regex_match(nick, regex("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){ //TODO: regex to config?
 				if (!nick.empty() && room->findMemberByNick(nick)){
 					syspack.message = "Такой ник уже занят";
 					client->sendPacket(syspack);
@@ -237,7 +237,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 			badcmd = true;
 		}
 
-		if (badcmd && (client->isAdmin() || (client->getID() != 0 && client->getID() == room->getOwner()))){
+		if (badcmd && (client->isAdmin() || member->isModer())){
 			badcmd = false;
 
 			if (cmd == "kick"){
@@ -250,6 +250,73 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					syspack.message = "Такой пользователь не найден";
 					client->sendPacket(syspack);
 				}
+			}
+			else if (cmd == "bannick"){
+				const auto &list = room->getBannedNicks();
+				string nick = parser.suffix();
+
+				if (!client->isAdmin() && list.size() > 100){ //TODO: constant to config
+					syspack.message = "Превышен лимит на количество забаненных ников";
+					client->sendPacket(syspack);
+				}
+				else if (nick.size() > 24 || nick.empty()){ //TODO: use regex above
+					syspack.message = "Некорректный ник";
+					client->sendPacket(syspack);
+				}
+				else {
+					if (room->banNick(nick)){
+						auto m = room->findMemberByNick(nick);
+						if (m){
+							room->kickMember(m);
+						}
+						syspack.message = "Забанен";
+					} else {
+						syspack.message = "Ник уже в бане";
+					}
+					client->sendPacket(syspack);
+				}
+			}
+			else if (cmd == "unbannick"){
+				string nick = parser.suffix();
+
+				if (nick.size() > 24 || nick.empty()){ //TODO: use regex above
+					syspack.message = "Некорректный ник";
+					client->sendPacket(syspack);
+				}
+				else {
+					if (room->unbanNick(nick)){
+						syspack.message = "Разбанен";
+					} else {
+						syspack.message = "Ник не был забанен";
+					}
+					client->sendPacket(syspack);
+				}
+			}
+			else if (cmd == "banip"){
+
+			}
+			else if (cmd == "unbanip"){
+
+			}
+			else if (cmd == "banuid"){
+
+			}
+			else if (cmd == "unbanuid"){
+
+			}
+			else if (cmd == "banlist"){
+				//TODO: other lists
+				string res;
+				const auto &list = room->getBannedNicks();
+
+				res += "Забаненные ники (" + to_string(list.size()) + "):\n";
+				for (auto s : list){
+					res += s;
+					res += "\n";
+				}
+
+				syspack.message = res;
+				client->sendPacket(syspack);
 			}
 			else if (cmd == "userlist"){
 				string users = "Пользователи:\n";
@@ -509,7 +576,7 @@ void PacketStatus::process(Client &client){
 		auto nstat = status == Member::Status::back ? Member::Status::online : Member::Status::away;
 		for (auto room : client.getConnectedRooms()){
 			auto mem = room->findMemberByClient(client.getSelfPtr());
-			if (!mem->getNick().empty()){
+			if (mem && !mem->getNick().empty()){
 				mem->setStatus(nstat);
 				room->sendPacketToAll(PacketStatus(mem, status));
 			}
