@@ -36,12 +36,27 @@ Server::Server(int port)
 
 	    ClientPtr cli = make_shared<Client>(this, connection);
 	    cli->setSelfPtr(cli);
+
+		auto &cnt = connectionsCountFromIp[cli->getIP()];
+		if (cnt >= 5){ //TODO: to config
+			cout << date("[%H:%M:%S] ") << "Server: connections limit reached for " << cli->getIP() << endl;
+			server.send_close(connection, 0);
+		}
+		++cnt;
+
 	    clients[connection] = cli;
 	};
 	
 	chat.onclose = [&](auto connection, int status, const string& reason) {
 	    cout << date("[%H:%M:%S] ") << "Server: Closed connection #" << (size_t)connection.get()
 	    		<< " (" << connection->remote_endpoint_address << ")" << " with status code " << status << endl;
+
+		auto &cnt = connectionsCountFromIp[connection->remote_endpoint_address];
+		--cnt;
+
+		if (cnt <= 0){
+			connectionsCountFromIp.erase(connection->remote_endpoint_address);
+		}
 
 	    if (clients.find(connection) != clients.end()){
 			clients[connection]->onDisconnect();
@@ -53,6 +68,13 @@ Server::Server(int port)
 		cout << date("[%H:%M:%S] ") << "Server: Error in connection #" << (size_t)connection.get()
 				<< " (" << connection->remote_endpoint_address << "). "
 				<< "Error: " << ec << ", error message: " << ec.message() << endl;
+
+		auto &cnt = connectionsCountFromIp[connection->remote_endpoint_address];
+		--cnt;
+
+		if (cnt <= 0){
+			connectionsCountFromIp.erase(connection->remote_endpoint_address);
+		}
 
 		if (clients.find(connection) != clients.end()){
 			clients[connection]->onDisconnect();
@@ -84,6 +106,7 @@ Server::Server(int port)
 }
 
 void Server::start(){
+	connectionsCountFromIp.clear();
 	server.start();
 }
 

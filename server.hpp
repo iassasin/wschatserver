@@ -8,7 +8,8 @@ class Server;
 using WSServerBase = SimpleWeb::SocketServerBase<SimpleWeb::WSS>;
 using WSServer = WebSocketServerEx;
 
-#include <set>
+#include <unordered_set>
+#include <unordered_map>
 
 #include "client.hpp"
 #include "packet.hpp"
@@ -27,10 +28,11 @@ private:
 	static const int pingTimeout = 3*60;
 	static const int pingInterval = 30000;
 
-	map<shared_ptr<WSServerBase::Connection>, ClientPtr> clients;
+	unordered_map<shared_ptr<WSServerBase::Connection>, ClientPtr> clients;
+	unordered_map<string, uint> connectionsCountFromIp;
 	WSServer server;
 
-	set<RoomPtr> rooms;
+	unordered_set<RoomPtr> rooms;
 public:
 	Server(int port);
 	~Server(){ stop(); }
@@ -50,7 +52,7 @@ public:
 	ClientPtr getClientByID(int uid);
 	
 	vector<ClientPtr> getClients();
-	inline const set<RoomPtr> &getRooms(){ return rooms; }
+	inline const unordered_set<RoomPtr> &getRooms(){ return rooms; }
 
 	RoomPtr createRoom(string name);
 	bool removeRoom(string name);
