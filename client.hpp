@@ -22,7 +22,7 @@ private:
 	weak_ptr<Client> self;
 
 	string name;
-	int uid;
+	uint uid;
 	bool _isGirl;
 	string color;
 public:
@@ -59,7 +59,7 @@ public:
 	
 	inline string getIP(){ return connection->remote_endpoint_address; }
 
-	inline int getID(){ return uid; }
+	inline uint getID(){ return uid; }
 	inline void setID(int id){ uid = id; }
 	
 	inline Server *getServer(){ return server; }

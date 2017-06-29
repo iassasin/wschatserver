@@ -142,6 +142,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 //	regex r_to_end("^[.\\s\\S]+$");
 	regex r_to_space("^[^\\s]+");
 	regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
+	regex r_int("\\d+");
 
 	if (parser.next(r_cmd)){
 		badcmd = false;
@@ -160,10 +161,17 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					"/n <сообщение>\tнаписать оффтоп-сообщение\n"
 					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
 
-			if (client->isAdmin() || client->getID() == room->getOwner()){
+			if (member->isOwner()){
+				syspack.message += "\n\nВладелец комнаты:\n"
+						"/addmoder <uid>\tсделать пользователя с указанным ID аккаунта модератором\n"
+						"/delmoder <uid>\tубрать пользователя с указанным ID аккаунта из списка модераторов";
+			}
+
+			if (member->isModer()){
 				syspack.message += "\n\nМодератор комнаты:\n"
 						"/kick <ник>\tкик игрока с указанным ником\n"
-						"/userlist\tсписок клиентов с ID и IP";
+						"/userlist\tсписок клиентов с ID и IP\n"
+						"/moderlist\tпоказать список ID модераторов комнаты";
 			}
 
 			if (client->isAdmin()){
@@ -235,6 +243,55 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 		}
 		else {
 			badcmd = true;
+		}
+
+		if (badcmd && member->isOwner()){
+			badcmd = false;
+
+			if (cmd == "addmoder"){
+				auto &mods = room->getModerators();
+				if (!client->isAdmin() && mods.size() > 10){ //TODO: constant to config
+					syspack.message = "Превышен лимит на количество модераторов";
+					member->sendPacket(syspack);
+				}
+				else if (parser.next(r_int)){
+					uint uid;
+					parser.read(0, uid);
+
+					if (uid == 0){
+						syspack.message = "Гостя нельзя назначить модератором";
+					} else if (room->addModerator(uid)){
+						syspack.message = "Модератор добавлен";
+					} else {
+						syspack.message = "Пользователь уже в списке модераторов";
+					}
+					member->sendPacket(syspack);
+				}
+				else {
+					syspack.message = "Укажите ID аккаунта пользователя";
+					member->sendPacket(syspack);
+				}
+			}
+			else if (cmd == "delmoder"){
+				if (parser.next(r_int)){
+					uint uid;
+					parser.read(0, uid);
+
+					if (room->removeModerator(uid)){
+						syspack.message = "Модератор убран";
+					} else {
+						syspack.message = "Пользователь не является модератором";
+					}
+					member->sendPacket(syspack);
+				}
+				else {
+					syspack.message = "Укажите ID аккаунта пользователя";
+					member->sendPacket(syspack);
+				}
+			}
+			else {
+				badcmd = true;
+			}
 		}
 
 		if (badcmd && (client->isAdmin() || member->isModer())){
@@ -328,6 +385,17 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 
 				syspack.message = users;
 				client->sendPacket(syspack);
+			}
+			else if (cmd == "moderlist"){
+				auto &mods = room->getModerators();
+				string res = "Модераторы:";
+				for (auto mod : mods){
+					res += "\n";
+					res += to_string(mod);
+				}
+
+				syspack.message = res;
+				member->sendPacket(syspack);
 			}
 			else {
 				badcmd = true;

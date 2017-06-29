@@ -104,7 +104,7 @@ class Room {
 private:
 	Server *server;
 	string name;
-	int ownerId;
+	uint ownerId;
 	weak_ptr<Room> self;
 
 	unordered_set<MemberPtr> members;
@@ -112,6 +112,8 @@ private:
 	unordered_set<string> bannedNicks;
 	unordered_set<string> bannedIps;
 	unordered_set<uint> bannedUids;
+
+	unordered_set<uint> moderators;
 
 	list<string> history;
 
@@ -125,8 +127,8 @@ public:
 
 	void setSelfPtr(weak_ptr<Room> ptr){ self = ptr; }
 
-	void setOwner(int nid);
-	inline int getOwner(){ return ownerId; }
+	void setOwner(uint nid);
+	inline uint getOwner(){ return ownerId; }
 
 	string getName(){ return name; }
 	void setName(string nm){ name = nm; }
@@ -140,6 +142,8 @@ public:
 	void deserialize(const Json::Value &);
 
 	inline const unordered_set<MemberPtr> &getMembers(){ return members; }
+	inline const unordered_set<uint> &getModerators(){ return moderators; }
+
 	inline const unordered_set<string> &getBannedNicks(){ return bannedNicks; }
 	inline const unordered_set<string> &getBannedIps(){ return bannedIps; }
 	inline const unordered_set<uint> &getBannedUids(){ return bannedUids; }
@@ -151,6 +155,10 @@ public:
 	inline bool unbanNick(const string &nick){ return bannedNicks.erase(nick) > 0; }
 	inline bool unbanIp(const string &ip){ return bannedIps.erase(ip) > 0; }
 	inline bool unbanUid(uint uid){ return bannedUids.erase(uid) > 0; }
+
+	inline bool addModerator(uint uid){ return moderators.insert(uid).second; }
+	inline bool removeModerator(uint uid){ return moderators.erase(uid) > 0; }
+	inline bool isModerator(uint uid){ return moderators.find(uid) != moderators.end(); }
 
 	MemberPtr addMember(ClientPtr user);
 	bool removeMember(ClientPtr user);

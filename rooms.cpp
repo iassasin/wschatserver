@@ -66,7 +66,7 @@ void Member::setNick(const string &nnick){
 
 bool Member::isAdmin(){ return client->isAdmin(); }
 bool Member::isOwner(){ return client->isAdmin() || client->getID() != 0 && !room.expired() && client->getID() == room.lock()->getOwner(); }
-bool Member::isModer(){ return isOwner() || !room.expired() && false; }
+bool Member::isModer(){ return isOwner() || client->getID() != 0 && !room.expired() && room.lock()->isModerator(client->getID()); }
 
 
 Room::Room(Server *srv){
@@ -119,6 +119,7 @@ Json::Value Room::serialize(){
 	storeSet(val, "bannedNicks", bannedNicks);
 	storeSet(val, "bannedIps", bannedIps);
 	storeSet(val, "bannedUids", bannedUids);
+	storeSet(val, "moderators", moderators);
 
 	return val;
 }
@@ -152,6 +153,11 @@ void Room::deserialize(const Json::Value &val){
 	bannedUids.clear();
 	for (auto &v : val["bannedUids"]){
 		bannedUids.insert(v.asUInt());
+	}
+
+	moderators.clear();
+	for (auto &v : val["moderators"]){
+		moderators.insert(v.asUInt());
 	}
 }
 
@@ -202,7 +208,7 @@ MemberPtr Room::findMemberById(uint id){
 	return nullptr;
 }
 
-void Room::setOwner(int nid){
+void Room::setOwner(uint nid){
 	ownerId = nid;
 }
 

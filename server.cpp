@@ -169,7 +169,7 @@ ClientPtr Server::getClientByName(string name){
 	return ClientPtr();
 }
 
-ClientPtr Server::getClientByID(int uid){
+ClientPtr Server::getClientByID(uint uid){
 	for (auto clip : clients){
 		auto cli = clip.second;
 		if (cli->getID() > 0 && cli->getID() == uid)

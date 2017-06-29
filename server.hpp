@@ -49,7 +49,7 @@ public:
 	void sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata);
 	
 	ClientPtr getClientByName(string name);
-	ClientPtr getClientByID(int uid);
+	ClientPtr getClientByID(uint uid);
 	
 	vector<ClientPtr> getClients();
 	inline const unordered_set<RoomPtr> &getRooms(){ return rooms; }
