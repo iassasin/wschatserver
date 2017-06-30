@@ -57,6 +57,8 @@ public:
 	RoomPtr createRoom(string name);
 	bool removeRoom(string name);
 	RoomPtr getRoomByName(string name);
+
+	inline const unordered_map<string, uint> &getConnectionsCounter(){ return connectionsCountFromIp; }
 };
 
 #endif

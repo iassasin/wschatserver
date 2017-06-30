@@ -184,7 +184,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 
 			if (client->isAdmin()){
 				syspack.message += "\n\nАдмин:\n"
-						"/roomlist\tсписок комнат";
+						"/roomlist\tсписок комнат\n"
+						"/ipcounter\tпоказать счетчики подключений с ip";
 			}
 
 			client->sendPacket(syspack);
@@ -503,6 +504,17 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 
 				syspack.message = rooms;
 				client->sendPacket(syspack);
+			}
+			else if (cmd == "ipcounter"){
+				auto server = client->getServer();
+
+				string res = "Подключения:\n";
+				for (auto c : server->getConnectionsCounter()){
+					res += c.first + " - " + to_string(c.second) + "\n";
+				}
+
+				syspack.message = res;
+				member->sendPacket(syspack);
 			}
 			else {
 				badcmd = true;
