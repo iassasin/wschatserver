@@ -143,6 +143,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	regex r_to_space("^[^\\s]+");
 	regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
 	regex r_int("\\d+");
+	regex r_ip("(\\d{1,3}\\.){3}\\d{1,3}");
 
 	if (parser.next(r_cmd)){
 		badcmd = false;
@@ -169,7 +170,14 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 
 			if (member->isModer()){
 				syspack.message += "\n\nМодератор комнаты:\n"
-						"/kick <ник>\tкик игрока с указанным ником\n"
+						"/kick <ник>\tкик пользователя с указанным ником\n"
+						"/banlist\tпоказать общий список банов\n"
+						"/bannick <ник>\tзабанить пользователя с указанным ником\n"
+						"/banuid <id>\tзабанить аккаунт пользователя с указанным ID\n"
+						"/banip <ip>\tзабанить IP-адрес\n"
+						"/unbannick <ник>\tразбанить пользователя с указанным ником\n"
+						"/unbanuid <id>\tразбанить аккаунт пользователя с указанным ID\n"
+						"/unbanip <ip>\tразбанить IP-адрес\n"
 						"/userlist\tсписок клиентов с ID и IP\n"
 						"/moderlist\tпоказать список ID модераторов комнаты";
 			}
@@ -350,24 +358,103 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				}
 			}
 			else if (cmd == "banip"){
+				auto &list = room->getBannedIps();
+				if (!client->isAdmin() && list.size() > 100){ //TODO: constant to config
+					syspack.message = "Превышен лимит на количество забаненных IP";
+					member->sendPacket(syspack);
+				}
+				else if (parser.next(r_ip)){
+					string ip;
+					parser.read(0, ip);
 
+					if (room->banIp(ip)){
+						syspack.message = "IP забанен";
+					} else {
+						syspack.message = "IP уже в списке забаненных";
+					}
+					member->sendPacket(syspack);
+				}
+				else {
+					syspack.message = "Укажите корректный IP-адрес";
+					member->sendPacket(syspack);
+				}
 			}
 			else if (cmd == "unbanip"){
+				if (parser.next(r_ip)){
+					string ip;
+					parser.read(0, ip);
 
+					if (room->unbanIp(ip)){
+						syspack.message = "IP разбанен";
+					} else {
+						syspack.message = "IP не был забанен";
+					}
+					member->sendPacket(syspack);
+				}
+				else {
+					syspack.message = "Укажите ID аккаунта пользователя";
+					member->sendPacket(syspack);
+				}
 			}
 			else if (cmd == "banuid"){
+				auto &list = room->getBannedUids();
+				if (!client->isAdmin() && list.size() > 100){ //TODO: constant to config
+					syspack.message = "Превышен лимит на количество забаненных аккаунтов";
+					member->sendPacket(syspack);
+				}
+				else if (parser.next(r_int)){
+					uint uid;
+					parser.read(0, uid);
 
+					if (room->banUid(uid)){
+						syspack.message = "Аккаунт забанен";
+					} else {
+						syspack.message = "Аккаунт уже в списке забаненных";
+					}
+					member->sendPacket(syspack);
+				}
+				else {
+					syspack.message = "Укажите ID аккаунта пользователя";
+					member->sendPacket(syspack);
+				}
 			}
 			else if (cmd == "unbanuid"){
+				if (parser.next(r_int)){
+					uint uid;
+					parser.read(0, uid);
 
+					if (room->unbanUid(uid)){
+						syspack.message = "Аккаунт разбанен";
+					} else {
+						syspack.message = "Аккаунт не был забанен";
+					}
+					member->sendPacket(syspack);
+				}
+				else {
+					syspack.message = "Укажите ID аккаунта пользователя";
+					member->sendPacket(syspack);
+				}
 			}
 			else if (cmd == "banlist"){
-				//TODO: other lists
 				string res;
-				const auto &list = room->getBannedNicks();
+				auto &nlist = room->getBannedNicks();
 
-				res += "Забаненные ники (" + to_string(list.size()) + "):\n";
-				for (auto s : list){
+				res += "Забаненные ники (" + to_string(nlist.size()) + "):\n";
+				for (auto s : nlist){
+					res += s;
+					res += "\n";
+				}
+
+				auto &ulist = room->getBannedUids();
+				res += "Забаненные аккаунты (" + to_string(ulist.size()) + "):\n";
+				for (auto s : ulist){
+					res += to_string(s);
+					res += "\n";
+				}
+
+				auto &ilist = room->getBannedIps();
+				res += "Забаненные IP (" + to_string(ilist.size()) + "):\n";
+				for (auto s : ilist){
 					res += s;
 					res += "\n";
 				}

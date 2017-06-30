@@ -230,19 +230,32 @@ MemberPtr Room::addMember(ClientPtr user){
 		m->color = info.color;
 	}
 
-	if (!m->isOwner() && bannedNicks.find(m->nick) != bannedNicks.end()){
-		user->sendPacket(PacketSystem("", "Вы были забанены"));
-		return nullptr;
+	string nick;
+	int warn = 0;
+
+	if (!m->isModer()){
+		if (bannedIps.find(user->getIP()) != bannedIps.end()){
+			user->sendPacket(PacketSystem("", "Вы были забанены"));
+			return nullptr;
+		}
+		else if (bannedUids.find(user->getID()) != bannedUids.end()){
+			user->sendPacket(PacketSystem("", user->getID() == 0 ? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте" : "Вы были забанены"));
+			return nullptr;
+		}
+
+		if (bannedNicks.find(m->nick) != bannedNicks.end()){
+			warn = 2;
+			nick = m->nick;
+			m->nick = "";
+		}
 	}
 
-	bool warn = false;
-	string nick;
 	auto member = findMemberByNick(m->nick);
 	if (member){
 		if (m->nick == user->getName()){
 			kickMember(member);
 		} else {
-			warn = true;
+			warn = 1;
 			nick = m->nick;
 			m->nick = "";
 		}
@@ -256,8 +269,11 @@ MemberPtr Room::addMember(ClientPtr user){
 		user->sendRawData(s);
 	}
 
-	if (warn){
+	if (warn == 1){
 		m->sendPacket(PacketSystem(name, "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
+	}
+	else if (warn == 2){
+		m->sendPacket(PacketSystem(name, "Выбранный вами ранее ник (" + nick + ") забанен, выберите другой ник"));
 	}
 
 	if (!m->getNick().empty()){
