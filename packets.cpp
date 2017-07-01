@@ -939,11 +939,16 @@ Json::Value PacketRemoveRoom::serialize() const {
 }
 
 void PacketRemoveRoom::process(Client &client){
+	if (client.isGuest()){
+		client.sendPacket(PacketError(type, target, PacketError::Code::access_denied, "Гости не могут удалять комнаты"));
+		return;
+	}
+
 	auto server = client.getServer();
 	auto room = server->getRoomByName(target);
 
 	if (!room){
-		client.sendPacket(PacketSystem("", "Такая комната уже существует"));
+		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Такая комната не существует"));
 		return;
 	}
 
@@ -951,7 +956,7 @@ void PacketRemoveRoom::process(Client &client){
 		server->removeRoom(target);
 		client.sendPacket(*this);
 	} else {
-		client.sendPacket(PacketSystem("", "Вы не можете удалить эту комнату"));
+		client.sendPacket(PacketError(type, target, PacketError::Code::access_denied, "Вы не можете удалить эту комнату"));
 		return;
 	}
 }
