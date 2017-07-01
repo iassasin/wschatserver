@@ -893,19 +893,19 @@ Json::Value PacketCreateRoom::serialize() const {
 
 void PacketCreateRoom::process(Client &client){
 	if (client.isGuest()){
-		client.sendPacket(PacketSystem("", "Гости не могут создавать комнаты"));
+		client.sendPacket(PacketError(type, target, PacketError::Code::access_denied, "Гости не могут создавать комнаты"));
 		return;
 	}
 
 	if (!regex_match(target, regex(R"(#[a-zA-Z\d\-_ \[\]\(\)]{3,24})"))){
-		client.sendPacket(PacketSystem("", "Недопустимое имя комнаты"));
+		client.sendPacket(PacketError(type, target, PacketError::Code::invalid_target, "Недопустимое имя комнаты"));
 		return;
 	}
 
 	auto server = client.getServer();
 	auto room = server->createRoom(target);
 	if (!room){
-		client.sendPacket(PacketSystem("", "Такая комната уже существует"));
+		client.sendPacket(PacketError(type, target, PacketError::Code::already_exists, "Такая комната уже существует"));
 		return;
 	}
 

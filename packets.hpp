@@ -16,6 +16,9 @@ public:
 		database_error,
 		already_connected,
 		not_found,
+		access_denied,
+		invalid_target,
+		already_exists,
 	};
 public:
 	Type source;
