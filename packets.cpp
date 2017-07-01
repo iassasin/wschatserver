@@ -858,7 +858,7 @@ Json::Value PacketLeave::serialize() const {
 void PacketLeave::process(Client &client){
 	auto room = client.getRoomByName(target);
 	if (!room){
-		client.sendPacket(PacketSystem("", string("Вы не подключены к комнате \"") + target + "\""));
+		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\""));
 		return;
 	}
 
