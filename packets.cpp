@@ -21,6 +21,7 @@ void PacketError::deserialize(const Json::Value &obj){
 Json::Value PacketError::serialize() const {
 	Json::Value obj;
 	obj["type"] = (int) type;
+	obj["source"] = (uint) source;
 	obj["target"] = target;
 	obj["code"] = (uint) code;
 	obj["info"] = info;
@@ -810,14 +811,14 @@ Json::Value PacketJoin::serialize() const {
 
 void PacketJoin::process(Client &client){
 	if (client.getRoomByName(target)){
-		client.sendPacket(PacketSystem("", string("Вы уже подключены к комнате \"") + target + "\""));
+		client.sendPacket(PacketError(type, target, PacketError::Code::already_connected, "Вы уже подключены к комнате \"" + target + "\""));
 		return;
 	}
 
 	auto server = client.getServer();
 	auto room = server->getRoomByName(target);
 	if (!room){
-		client.sendPacket(PacketSystem("", string("Комнаты \"") + target + "\" не существует"));
+		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Комнаты \"" + target + "\" не существует"));
 		return;
 	}
 

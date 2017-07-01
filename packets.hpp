@@ -14,7 +14,8 @@ public:
 	enum class Code : uint8_t {
 		unknown = 0,
 		database_error,
-
+		already_connected,
+		not_found,
 	};
 public:
 	Type source;
