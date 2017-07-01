@@ -9,11 +9,28 @@
 
 using std::vector;
 
-class PacketBad : public Packet {
+class PacketError : public Packet {
 public:
-	virtual void deserialize(const Json::Value &){}
-	virtual Json::Value serialize() const { return Json::Value(); }
-	virtual void process(Client &){}
+	enum class Code : uint8_t {
+		unknown = 0,
+		database_error,
+
+	};
+public:
+	Type source;
+	string target;
+	Code code;
+	string info;
+
+	PacketError() { type = Type::error; }
+	PacketError(Type src, const string &targ, Code cod, const string &inf = "")
+			: source(src), target(targ), code(cod), info(inf){ type = Type::error; }
+	PacketError(Type src, Code cod, const string &inf = "") : PacketError(src, "", cod, inf){}
+	PacketError(Code cod, const string &inf = "") : PacketError(Type::error, cod, inf){}
+
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
+	virtual void process(Client &);
 };
 
 class PacketSystem : public Packet {
@@ -84,6 +101,8 @@ private:
 
 public:
 	string ukey;
+	uint user_id;
+	string name;
 	
 	PacketAuth();
 	virtual ~PacketAuth();

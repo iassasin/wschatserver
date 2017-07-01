@@ -15,7 +15,7 @@ private:
 	
 public:
 	enum class Type : int {
-		bad=0,
+		error=0,
 		system,
 		message,
 		online_list,

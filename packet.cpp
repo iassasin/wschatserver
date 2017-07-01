@@ -4,7 +4,7 @@
 #include "packets.hpp"
 
 Packet::Packet(){
-	type = Type::bad;
+	type = Type::error;
 }
 
 Packet::~Packet(){
@@ -21,7 +21,7 @@ Packet *Packet::read(const std::string &data){
 	
 	Packet *pack = nullptr;
 	switch ((Type) obj["type"].asInt()){
-		case Type::bad:					pack = new PacketBad(); break;
+		case Type::error:				pack = new PacketError(); break;
 		case Type::system:				pack = new PacketSystem(); break;
 		case Type::message:				pack = new PacketMessage(); break;
 		case Type::online_list:			pack = new PacketOnlineList(); break;

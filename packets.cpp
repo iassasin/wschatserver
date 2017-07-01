@@ -12,6 +12,27 @@ using namespace sql;
 using namespace sinlib;
 using std::regex;
 
+//----
+
+void PacketError::deserialize(const Json::Value &obj){
+
+}
+
+Json::Value PacketError::serialize() const {
+	Json::Value obj;
+	obj["type"] = (int) type;
+	obj["target"] = target;
+	obj["code"] = (uint) code;
+	obj["info"] = info;
+	return obj;
+}
+
+void PacketError::process(Client &client){
+
+}
+
+//----
+
 PacketSystem::PacketSystem(){ type = Type::system; }
 PacketSystem::PacketSystem(const string &targ, const string &msg) :  target(targ), message(msg){ type = Type::system; }
 PacketSystem::~PacketSystem(){}
@@ -637,7 +658,9 @@ void PacketAuth::deserialize(const Json::Value &obj){
 Json::Value PacketAuth::serialize() const {
 	Json::Value obj;
 	obj["type"] = (int) type;
-	obj["ukey"] = ukey;
+	//obj["ukey"] = ukey;
+	obj["user_id"] = user_id;
+	obj["name"] = name;
 	return obj;
 }
 
@@ -674,10 +697,14 @@ void PacketAuth::process(Client &client){
 			}
 
 			if (tries < 0){
-				client.sendPacket(PacketSystem("", "Ошибка подключения к БД при авторизации!"));
+				client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
 			}
 		}
 	}
+
+	user_id = client.getID();
+	name = client.getName();
+	client.sendPacket(*this);
 }
 
 //----
