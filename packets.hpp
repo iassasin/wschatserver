@@ -93,6 +93,7 @@ public:
 	Json::Value list;
 
 	PacketOnlineList();
+	PacketOnlineList(RoomPtr room);
 	virtual ~PacketOnlineList();
 	
 	virtual void deserialize(const Json::Value &);

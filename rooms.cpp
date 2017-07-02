@@ -261,9 +261,14 @@ MemberPtr Room::addMember(ClientPtr user){
 		}
 	}
 
+	if (!m->getNick().empty()){
+		sendPacketToAll(PacketStatus(m, Member::Status::online));
+	}
+
 	auto res = members.insert(m);
 
 	user->sendPacket(PacketJoin(m));
+	user->sendPacket(PacketOnlineList(self.lock()));
 
 	for (const string &s : getHistory()){
 		user->sendRawData(s);
@@ -275,9 +280,11 @@ MemberPtr Room::addMember(ClientPtr user){
 	else if (warn == 2){
 		m->sendPacket(PacketSystem(name, "Выбранный вами ранее ник (" + nick + ") забанен, выберите другой ник"));
 	}
-
-	if (!m->getNick().empty()){
-		sendPacketToAll(PacketStatus(m, Member::Status::online));
+	else if (m->nick.empty()){
+		m->sendPacket(PacketSystem(name, "Перед началом общения укажите свой ник: /nick MyNick"));
+	}
+	else {
+		m->sendPacket(PacketSystem(name, "Вы пришли в комнату"));
 	}
 
 	if (res.second){
