@@ -225,7 +225,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					member->setNick(nick);
 				}
 			} else {
-				syspack.message = "Ник должен содержать только латинские буквоцифры и _-, и не длинее 24 символов";
+				syspack.message = "Ник должен содержать только латинские буквоцифры и _-, пробелы и не длинее 24 символов";
 				client->sendPacket(syspack);
 			}
 		}
