@@ -159,13 +159,12 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	bool badcmd = true;
 
 	regex_parser parser(msg);
-	regex r_cmd("^/([^\\s]+)");
-	regex r_spaces("^\\s+");
-//	regex r_to_end("^[.\\s\\S]+$");
-	regex r_to_space("^[^\\s]+");
-	regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
-	regex r_int("\\d+");
-	regex r_ip("(\\d{1,3}\\.){3}\\d{1,3}");
+	static regex r_cmd("^/([^\\s]+)");
+	static regex r_spaces("^\\s+");
+	static regex r_to_space("^[^\\s]+");
+	static regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
+	static regex r_int("^\\d+");
+	static regex r_ip("^(\\d{1,3}\\.){3}\\d{1,3}");
 
 	if (parser.next(r_cmd)){
 		badcmd = false;
@@ -182,7 +181,8 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 					"/me <сообщение>\tнаписать сообщение-действие от своего лица\n"
 					"/do <сообщение>\tнаписать сообщение от третьего лица\n"
 					"/n <сообщение>\tнаписать оффтоп-сообщение\n"
-					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)";
+					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)"
+					"/umsg <member_id> <сообщение>\tнаписать личное сообщение по внутрикомнатному id пользователя (функция тестовая)";
 
 			if (member->isOwner()){
 				syspack.message += "\n\nВладелец комнаты:\n"
@@ -546,10 +546,19 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 		if (badcmd && member->hasNick()){
 			badcmd = false;
 
-			if (cmd == "msg"){
-				string nick;
-				if (parser.next(r_to_space)){
-					parser.read(0, nick);
+			if (cmd == "msg" || cmd == "umsg"){
+				string part;
+				uint mid = 0;
+
+				if (cmd[0] == 'm'){
+					if (parser.next(r_to_space)){
+						parser.read(0, part);
+					}
+				} else {
+					if (parser.next(r_int)){
+						parser.read(0, mid);
+					}
+					parser.next(r_to_space);
 				}
 
 				string smsg;
@@ -560,7 +569,13 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 				if (regex_match(smsg, regex("\\s*"))){
 					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
 				} else {
-					auto m2 = room->findMemberByNick(nick);
+					MemberPtr m2;
+					if (cmd[0] == 'u'){
+						m2 = room->findMemberById(mid);
+					} else {
+						m2 = room->findMemberByNick(part);
+					}
+
 					if (!m2){
 						syspack.message = "Указанный пользователь не найден";
 						client->sendPacket(syspack);
