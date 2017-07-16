@@ -9,13 +9,14 @@
 #include "packets.hpp"
 
 Server::Server(int port)
-	: server(port, 1, config["ssl"]["certificate"].asString(), config["ssl"]["private_key"].asString())
+	: server(config["ssl"]["certificate"].asString(), config["ssl"]["private_key"].asString())
 {
-	cout << "Started wsserver at port " << port << endl;
+	server.config.port = (unsigned short) port;
+	server.config.thread_pool_size = 1;
 
 	auto& chat = server.endpoint["^/chat/?$"];
 	
-	chat.onmessage = [&](auto connection, auto message) {
+	chat.on_message = [&](auto connection, auto message) {
 		string msg = message->string();
 		try {
 			if (clients.find(connection) != clients.end()){
@@ -30,7 +31,7 @@ Server::Server(int port)
 		}
 	};
 	
-	chat.onopen = [&, this](auto connection) {
+	chat.on_open = [&, this](auto connection) {
 	    cout << date("[%H:%M:%S] ") << "Server: Opened connection #" << (size_t)connection.get()
 	    		<< " (" << connection->remote_endpoint_address << ")" << endl;
 
@@ -47,7 +48,7 @@ Server::Server(int port)
 	    clients[connection] = cli;
 	};
 	
-	chat.onclose = [&](auto connection, int status, const string& reason) {
+	chat.on_close = [&](auto connection, int status, const string& reason) {
 	    cout << date("[%H:%M:%S] ") << "Server: Closed connection #" << (size_t)connection.get()
 	    		<< " (" << connection->remote_endpoint_address << ")" << " with status code " << status << endl;
 
@@ -64,7 +65,7 @@ Server::Server(int port)
 	    }
 	};
 	
-	chat.onerror = [&](auto connection, const boost::system::error_code& ec) {
+	chat.on_error = [&](auto connection, const boost::system::error_code& ec) {
 		cout << date("[%H:%M:%S] ") << "Server: Error in connection #" << (size_t)connection.get()
 				<< " (" << connection->remote_endpoint_address << "). "
 				<< "Error: " << ec << ", error message: " << ec.message() << endl;
@@ -106,6 +107,7 @@ Server::Server(int port)
 }
 
 void Server::start(){
+	cout << "Started wsserver at port " << server.config.port << endl;
 	connectionsCountFromIp.clear();
 	server.start();
 }

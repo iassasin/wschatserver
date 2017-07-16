@@ -2,17 +2,17 @@
 #define CLIENT_H_
 
 #include <memory>
+#include <set>
 
 class Client;
+
 using ClientPtr = std::shared_ptr<Client>;
 
-#include "server_ws.hpp"
 #include "packet.hpp"
 #include "server.hpp"
 #include "rooms.hpp"
 
 using namespace std;
-using namespace SimpleWeb;
 
 class Client {
 private:

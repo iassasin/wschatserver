@@ -18,7 +18,6 @@ using WSServer = WebSocketServerEx;
 #include "rooms.hpp"
 
 using namespace std;
-using namespace SimpleWeb;
 
 class Server {
 public:

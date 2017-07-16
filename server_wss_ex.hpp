@@ -4,24 +4,23 @@
 
 #pragma once
 
-#include "server_wss.hpp"
+#include "simple_wss/server_wss.hpp"
 #include "algo.hpp"
 
 class WebSocketServerEx : public SimpleWeb::SocketServer<SimpleWeb::WSS> {
 public:
-	WebSocketServerEx(unsigned short port, size_t num_threads, const std::string& cert_file, const std::string& private_key_file,
-	            size_t timeout_request=5, size_t timeout_idle=0,
-	            const std::string& verify_file=std::string()) :
-	            SimpleWeb::SocketServer<SimpleWeb::WSS>(port, num_threads, cert_file, private_key_file, timeout_request, timeout_idle, verify_file)
+	WebSocketServerEx(const std::string& cert_file, const std::string& private_key_file) :
+			SimpleWeb::SocketServer<SimpleWeb::WSS>(cert_file, private_key_file)
 	{
-
+		io_service = std::make_shared<boost::asio::io_service>();
+		internal_io_service = true;
 	}
 
 	void runWithTimeout(int msec, std::function<void()> func){
 		using namespace boost;
 		using namespace boost::asio;
 
-		auto timer = std::make_shared<deadline_timer>(io_service);
+		auto timer = std::make_shared<deadline_timer>(*io_service);
 		std::function<void(const system::error_code& ec)> f;
 		f = [func, timer](const system::error_code& ec){
 			if(!ec){
@@ -40,7 +39,7 @@ public:
 		using namespace boost;
 		using namespace boost::asio;
 
-		auto timer = std::make_shared<deadline_timer>(io_service);
+		auto timer = std::make_shared<deadline_timer>(*io_service);
 		auto f = std::make_shared<std::function<void(const system::error_code& ec)>>();
 		*f = [=](const system::error_code& ec){
 			if(!ec){
