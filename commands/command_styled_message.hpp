@@ -33,6 +33,7 @@ public:
 			case PacketMessage::Style::me: return "me";
 			case PacketMessage::Style::event: return "do";
 			case PacketMessage::Style::offtop: return "n";
+			case PacketMessage::Style::message: return "?";
 		}
 		return "?";
 	}
@@ -46,6 +47,7 @@ public:
 			case PacketMessage::Style::me: return "Написать сообщение-действие от своего лица";
 			case PacketMessage::Style::event: return "Написать сообщение от третьего лица";
 			case PacketMessage::Style::offtop: return "Написать оффтоп-сообщение";
+			case PacketMessage::Style::message: return "";
 		}
 		return "";
 	}
