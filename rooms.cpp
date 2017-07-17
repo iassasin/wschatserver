@@ -65,8 +65,8 @@ void Member::setNick(const string &nnick){
 }
 
 bool Member::isAdmin(){ return client->isAdmin(); }
-bool Member::isOwner(){ return client->isAdmin() || client->getID() != 0 && !room.expired() && client->getID() == room.lock()->getOwner(); }
-bool Member::isModer(){ return isOwner() || client->getID() != 0 && !room.expired() && room.lock()->isModerator(client->getID()); }
+bool Member::isOwner(){ return client->isAdmin() || (client->getID() != 0 && !room.expired() && client->getID() == room.lock()->getOwner()); }
+bool Member::isModer(){ return isOwner() || (client->getID() != 0 && !room.expired() && room.lock()->isModerator(client->getID())); }
 
 
 Room::Room(Server *srv){
