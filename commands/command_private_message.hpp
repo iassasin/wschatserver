@@ -73,7 +73,7 @@ public:
 		} else {
 			MemberPtr m2 = room->findMemberById(mid);
 
-			if (!m2){
+			if (!m2 || m2->getNick().empty()){
 				member->sendPacket(PacketSystem(room->getName(), "Указанный пользователь не найден"));
 			} else {
 				PacketMessage pmsg(member, m2, smsg);
