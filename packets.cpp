@@ -4,6 +4,7 @@
 #include "server.hpp"
 #include "regex/regex.hpp"
 #include "commands/commands.hpp"
+#include "logger.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -314,8 +315,7 @@ void PacketAuth::process(Client &client){
 					}
 					break;
 				} catch (SQLException &e){
-					cout << date("[%H:%M:%S] ") << "# ERR: " << e.what() << endl;
-					cout << "# ERR: SQLException code " << e.getErrorCode() << ", SQLState: " << e.getSQLState() << endl;
+					Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
 					db.reconnect();
 				}
 			}

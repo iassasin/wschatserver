@@ -3,15 +3,15 @@
 #include "algo.hpp"
 #include "packet.hpp"
 #include "packets.hpp"
+#include "logger.hpp"
 
 void Client::onPacket(string msg){
-//	cout << date("[%H:%M:%S] ") << "Receive: " << msg << endl;
 	unique_ptr<Packet> pack(Packet::read(msg));
 	if (pack){
 		lastPacketTime = time(nullptr);
 		pack->process(*this);
 	} else {
-		cout << date("[%H:%M:%S] ") << "Dropped invalid packet: " << msg << endl;
+		Logger::warn("Dropped invalid packet: ", msg);
 	}
 }
 

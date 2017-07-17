@@ -5,11 +5,11 @@ using namespace std;
 
 string date(const string &format){
 	time_t rawtime;
-	struct tm * timeinfo;
+	struct tm *timeinfo;
 	char buffer[format.size()*2];
 
 	time (&rawtime);
-	timeinfo = localtime (&rawtime);
+	timeinfo = localtime(&rawtime);
 
 	strftime (buffer, format.size()*2, format.c_str(), timeinfo);
 	

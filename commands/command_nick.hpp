@@ -7,6 +7,7 @@
 
 #include "command.hpp"
 #include "../packets.hpp"
+#include "../logger.hpp"
 
 class CommandNick : public Command {
 public:
@@ -20,7 +21,10 @@ public:
 		string nick = parser.suffix();
 		nick = regex_replace(regex_replace(nick, regex("^\\s+"), ""), regex("\\s+$"), "");
 
-		cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << member->getClient()->getIP() << ")" << endl;
+		if (!nick.empty()){
+			Logger::info(room->getName(), ": Login = ", nick, " (", member->getClient()->getIP(), ")");
+		}
+
 		if (nick.empty() || regex_match(nick, r_login)){ //TODO: regex to config?
 			if (!nick.empty() && room->findMemberByNick(nick)){
 				syspack.message = "Такой ник уже занят";

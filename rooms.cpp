@@ -262,6 +262,7 @@ MemberPtr Room::addMember(ClientPtr user){
 	}
 
 	if (!m->getNick().empty()){
+		Logger::info(name, ": Login = ", m->getNick(), " (", user->getIP(), ")");
 		sendPacketToAll(PacketStatus(m, Member::Status::online));
 	}
 

@@ -6,6 +6,7 @@
 
 #include "simple_wss/server_wss.hpp"
 #include "algo.hpp"
+#include "logger.hpp"
 
 class WebSocketServerEx : public SimpleWeb::SocketServer<SimpleWeb::WSS> {
 public:
@@ -27,7 +28,7 @@ public:
 				func();
 			}
 			else {
-				std::cout << date("[%H:%M:%S] ") << "Server: Timer error " << ec.value() << ": " << ec.message() << std::endl;
+				Logger::error("Timer error ", ec.value(), ": ", ec.message());
 			}
 		};
 
@@ -48,7 +49,7 @@ public:
 				timer->async_wait(*f);
 			}
 			else {
-				std::cout << date("[%H:%M:%S] ") << "Server: Timer error " << ec.value() << ": " << ec.message() << std::endl;
+				Logger::error("Timer error ", ec.value(), ": ", ec.message());
 			}
 		};
 

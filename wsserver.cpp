@@ -4,20 +4,21 @@
 #include <exception>
 #include <signal.h>
 
+#include "logger.hpp"
+
 static std::shared_ptr<Server> server;
 
 static void save_state(){
 	try {
 		Config::writeToFile("rooms.dat", server->serialize());
-		cout << "Server state saved" << endl;
+		Logger::info("Server state saved");
 	} catch (exception &e){
-		cerr << "Exception while saving old server state:" << endl
-				<< e.what();
+		Logger::error("Exception while saving old server state:\n", e.what());
 	}
 }
 
 static void sighandler(int signum){
-	cout << "Received signal " << signum << endl;
+	Logger::info("Received signal ", signum);
 	server->stop();
 	save_state();
 	exit(signum != SIGTERM ? signum : 0);
@@ -25,12 +26,9 @@ static void sighandler(int signum){
 
 int main() {
 	if (signal(SIGTERM, sighandler) == SIG_ERR || signal(SIGINT, sighandler) == SIG_ERR || signal(SIGABRT, sighandler) == SIG_ERR){
-		cerr << "Can't set signals. Aborting." << endl;
+		Logger::error("Can't set signals. Aborting.");
 		return 1;
 	}
-
-//	Json::StyledWriter wr;
-//	std::cout << wr.write(config.conf) << std::endl;
 
 	server = std::make_shared<Server>(config["port"].asInt());
 
@@ -38,12 +36,10 @@ int main() {
 		Json::Value val;
 		Config::loadFromFile("rooms.dat", val);
 		server->deserialize(val);
-		cout << "Last server state loaded" << endl;
+		Logger::info("Last server state loaded");
 	} catch (exception &e){
-		cerr << "Exception while loading last server state:" << endl
-				<< e.what();
+		Logger::error("Exception while loading last server state:\n", e.what());
 	}
-
 
 	server->start();
 

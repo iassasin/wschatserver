@@ -7,6 +7,7 @@
 #include "client.hpp"
 #include "server.hpp"
 #include "packets.hpp"
+#include "logger.hpp"
 
 Server::Server(int port)
 	: server(config["ssl"]["certificate"].asString(), config["ssl"]["private_key"].asString())
@@ -23,24 +24,21 @@ Server::Server(int port)
 				clients[connection]->onPacket(msg);
 			}
 		} catch (const exception &e){
-			cout << date("[%H:%M:%S] ") << "Server: " << e.what() << ". While processing message:" << endl
-					 << msg << endl;
+			Logger::error("Exception: ", e.what(), "\nWhile processing message:", msg);
 		} catch (...){
-			 cout << date("[%H:%M:%S] ") << "Server: unknown error while processing message:" << endl
-					 << msg << endl;
+			Logger::error("Unknown error while processing message:", msg);
 		}
 	};
 	
 	chat.on_open = [&, this](auto connection) {
-	    cout << date("[%H:%M:%S] ") << "Server: Opened connection #" << (size_t)connection.get()
-	    		<< " (" << connection->remote_endpoint_address << ")" << endl;
+		ClientPtr cli = make_shared<Client>(this, connection);
+		cli->setSelfPtr(cli);
 
-	    ClientPtr cli = make_shared<Client>(this, connection);
-	    cli->setSelfPtr(cli);
+		Logger::info("Opened connection from ", cli->getIP());
 
 		auto &cnt = connectionsCountFromIp[cli->getIP()];
 		if (cnt >= 5){ //TODO: to config
-			cout << date("[%H:%M:%S] ") << "Server: connections limit reached for " << cli->getIP() << endl;
+			Logger::info("Connections limit reached for ", cli->getIP());
 			server.send_close(connection, 0);
 		}
 		++cnt;
@@ -49,8 +47,7 @@ Server::Server(int port)
 	};
 	
 	chat.on_close = [&](auto connection, int status, const string& reason) {
-	    cout << date("[%H:%M:%S] ") << "Server: Closed connection #" << (size_t)connection.get()
-	    		<< " (" << connection->remote_endpoint_address << ")" << " with status code " << status << endl;
+	    Logger::info("Closed connection from ", connection->remote_endpoint_address, " with status code ", status);
 
 		auto &cnt = connectionsCountFromIp[connection->remote_endpoint_address];
 		--cnt;
@@ -66,9 +63,8 @@ Server::Server(int port)
 	};
 	
 	chat.on_error = [&](auto connection, const boost::system::error_code& ec) {
-		cout << date("[%H:%M:%S] ") << "Server: Error in connection #" << (size_t)connection.get()
-				<< " (" << connection->remote_endpoint_address << "). "
-				<< "Error: " << ec << ", error message: " << ec.message() << endl;
+		Logger::warn("Error in connection from ", connection->remote_endpoint_address,
+				". Error: ", ec, ", error message: ", ec.message());
 
 		auto &cnt = connectionsCountFromIp[connection->remote_endpoint_address];
 		--cnt;
@@ -101,13 +97,13 @@ Server::Server(int port)
 
 		for (auto cli : toKick){
 			kick(cli);
-			cout << date("[%H:%M:%S] ") << "Server: Kicked by inactive: " << cli->getName() << " [" << cli->getIP() << "]" << endl;
+			Logger::info("Kicked by no ping: ", cli->getName(), " [", cli->getIP(), "]");
 		}
 	});
 }
 
 void Server::start(){
-	cout << "Started wsserver at port " << server.config.port << endl;
+	Logger::info("Started wsserver at port ", server.config.port);
 	connectionsCountFromIp.clear();
 	server.start();
 }
