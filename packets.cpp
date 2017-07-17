@@ -3,6 +3,7 @@
 #include "algo.hpp"
 #include "server.hpp"
 #include "regex/regex.hpp"
+#include "commands/commands.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -10,6 +11,7 @@
 
 using namespace sql;
 using namespace sinlib;
+using namespace std;
 using std::regex;
 
 //----
@@ -147,11 +149,45 @@ void PacketMessage::process(Client &client){
 	}
 }
 
-bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string &msg){
-	auto client = member->getClient();
-	PacketSystem syspack;
-	syspack.target = room->getName();
+CommandProcessor PacketMessage::cmd_all {
+	new CommandHelp(),
+	new CommandNick(),
+	new CommandGender(),
+	new CommandColor(),
+};
 
+CommandProcessor PacketMessage::cmd_user {
+	new CommandStyledMessage(PacketMessage::Style::me),
+	new CommandStyledMessage(PacketMessage::Style::offtop),
+	new CommandStyledMessage(PacketMessage::Style::event),
+	new CommandPrivateMessage(),
+	new CommandPrivateMessageById(),
+};
+
+CommandProcessor PacketMessage::cmd_moder {
+	new CommandModerList(),
+	new CommandBanList(),
+	new CommandBanNick(),
+	new CommandBanUid(),
+	new CommandBanIp(),
+	new CommandUnbanNick(),
+	new CommandUnbanUid(),
+	new CommandUnbanIp(),
+	new CommandKick(),
+	new CommandUserList(),
+};
+
+CommandProcessor PacketMessage::cmd_owner {
+	new CommandAddModer(),
+	new CommandDelModer(),
+};
+
+CommandProcessor PacketMessage::cmd_admin {
+	new CommandRoomList(),
+	new CommandIpCounter(),
+};
+
+bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string &msg){
 	if (msg[0] != '/'){
 		return false;
 	}
@@ -161,10 +197,6 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	regex_parser parser(msg);
 	static regex r_cmd("^/([^\\s]+)");
 	static regex r_spaces("^\\s+");
-	static regex r_to_space("^[^\\s]+");
-	static regex r_color("^#?([\\da-fA-F]{6}|[\\da-fA-F]{3})");
-	static regex r_int("^\\d+");
-	static regex r_ip("^(\\d{1,3}\\.){3}\\d{1,3}");
 
 	if (parser.next(r_cmd)){
 		badcmd = false;
@@ -172,445 +204,18 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 		parser >> cmd;
 		parser.next(r_spaces);
 
-		if (cmd == "help"){
-			syspack.message = "Доступные команды:\n"
-					"/help\tвсе понятно\n"
-					"/nick <новый ник>\tсменить ник\n"
-					"/gender [f|m]\tсменить пол\n"
-					"/color <цвет в hex-формате>\tсменить цвет. Например: #f00 (красный), #f0f000 (оттенок розового). Допускается не писать знак #\n"
-					"/me <сообщение>\tнаписать сообщение-действие от своего лица\n"
-					"/do <сообщение>\tнаписать сообщение от третьего лица\n"
-					"/n <сообщение>\tнаписать оффтоп-сообщение\n"
-					"/msg <ник> <сообщение>\tнаписать личное сообщение в пределах комнаты (функция тестовая)\n"
-					"/umsg <member_id> <сообщение>\tнаписать личное сообщение по внутрикомнатному id пользователя (функция тестовая)\n";
-
-			if (member->isOwner()){
-				syspack.message += "\n\nВладелец комнаты:\n"
-						"/addmoder <uid>\tсделать пользователя с указанным ID аккаунта модератором\n"
-						"/delmoder <uid>\tубрать пользователя с указанным ID аккаунта из списка модераторов";
-			}
-
-			if (member->isModer()){
-				syspack.message += "\n\nМодератор комнаты:\n"
-						"/kick <ник>\tкик пользователя с указанным ником\n"
-						"/banlist\tпоказать общий список банов\n"
-						"/bannick <ник>\tзабанить пользователя с указанным ником\n"
-						"/banuid <id>\tзабанить аккаунт пользователя с указанным ID\n"
-						"/banip <ip>\tзабанить IP-адрес\n"
-						"/unbannick <ник>\tразбанить пользователя с указанным ником\n"
-						"/unbanuid <id>\tразбанить аккаунт пользователя с указанным ID\n"
-						"/unbanip <ip>\tразбанить IP-адрес\n"
-						"/userlist\tсписок клиентов с ID и IP\n"
-						"/moderlist\tпоказать список ID модераторов комнаты";
-			}
-
-			if (client->isAdmin()){
-				syspack.message += "\n\nАдмин:\n"
-						"/roomlist\tсписок комнат\n"
-						"/ipcounter\tпоказать счетчики подключений с ip";
-			}
-
-			client->sendPacket(syspack);
-		}
-		else if (cmd == "nick"){
-			string nick = parser.suffix();
-			nick = regex_replace(regex_replace(nick, regex("^\\s+"), ""), regex("\\s+$"), "");
-
-			cout << date("[%H:%M:%S] INFO: login = ") << nick << " (" << client->getIP() << ")" << endl;
-			if (nick.empty() || regex_match(nick, regex("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$"))){ //TODO: regex to config?
-				if (!nick.empty() && room->findMemberByNick(nick)){
-					syspack.message = "Такой ник уже занят";
-					client->sendPacket(syspack);
-				} else {
-					member->setNick(nick);
-				}
-			} else {
-				syspack.message = "Ник должен содержать только латинские буквоцифры и _-, пробелы и не длинее 24 символов";
-				client->sendPacket(syspack);
-			}
-		}
-		else if (cmd == "gender"){
-			string g;
-			if (parser.next(r_to_space)){
-				parser.read(0, g);
-				if (!(g[0] == 'f' || g[0] == 'm')){
-					g = "";
-				}
-			}
-
-			if (g.empty()){
-				member->setGirl(!member->isGirl());
-			} else {
-				member->setGirl(g[0] == 'f');
-			}
-
-			if (member->hasNick()){
-				room->sendPacketToAll(PacketStatus(member, Member::Status::gender_change));
-			} else {
-				member->sendPacket(PacketStatus(member, Member::Status::gender_change));
-			}
-		}
-		else if (cmd == "color"){
-			string clr;
-			if (parser.next(r_color)){
-				parser.read(0, clr);
-				if (clr[0] != '#'){
-					clr = string("#") + clr;
-				}
-			}
-
-			if (clr.empty()){
-				syspack.message = "Указан неверный цвет";
-				member->sendPacket(syspack);
-			} else {
-				member->setColor(clr);
-
-				if (member->hasNick()){
-					room->sendPacketToAll(PacketStatus(member, Member::Status::color_change));
-				} else {
-					member->sendPacket(PacketStatus(member, Member::Status::color_change));
-				}
-			}
-		}
+		if (member->isAdmin() && cmd_admin.process(cmd, member, parser)){}
+		else if (member->isOwner() && cmd_owner.process(cmd, member, parser)){}
+		else if (member->isModer() && cmd_moder.process(cmd, member, parser)){}
+		else if (member->hasNick() && cmd_user.process(cmd, member, parser)){}
+		else if (cmd_all.process(cmd, member, parser)){}
 		else {
 			badcmd = true;
-		}
-
-		if (badcmd && member->isOwner()){
-			badcmd = false;
-
-			if (cmd == "addmoder"){
-				auto &mods = room->getModerators();
-				if (!client->isAdmin() && mods.size() > 10){ //TODO: constant to config
-					syspack.message = "Превышен лимит на количество модераторов";
-					member->sendPacket(syspack);
-				}
-				else if (parser.next(r_int)){
-					uint uid;
-					parser.read(0, uid);
-
-					if (uid == 0){
-						syspack.message = "Гостя нельзя назначить модератором";
-					} else if (room->addModerator(uid)){
-						syspack.message = "Модератор добавлен";
-					} else {
-						syspack.message = "Пользователь уже в списке модераторов";
-					}
-					member->sendPacket(syspack);
-				}
-				else {
-					syspack.message = "Укажите ID аккаунта пользователя";
-					member->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "delmoder"){
-				if (parser.next(r_int)){
-					uint uid;
-					parser.read(0, uid);
-
-					if (room->removeModerator(uid)){
-						syspack.message = "Модератор убран";
-					} else {
-						syspack.message = "Пользователь не является модератором";
-					}
-					member->sendPacket(syspack);
-				}
-				else {
-					syspack.message = "Укажите ID аккаунта пользователя";
-					member->sendPacket(syspack);
-				}
-			}
-			else {
-				badcmd = true;
-			}
-		}
-
-		if (badcmd && (client->isAdmin() || member->isModer())){
-			badcmd = false;
-
-			if (cmd == "kick"){
-				string nick = parser.suffix();
-
-				auto m = room->findMemberByNick(nick);
-				if (m){
-					room->kickMember(m);
-				} else {
-					syspack.message = "Такой пользователь не найден";
-					client->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "bannick"){
-				const auto &list = room->getBannedNicks();
-				string nick = parser.suffix();
-
-				if (!client->isAdmin() && list.size() > 100){ //TODO: constant to config
-					syspack.message = "Превышен лимит на количество забаненных ников";
-					client->sendPacket(syspack);
-				}
-				else if (nick.size() > 24 || nick.empty()){ //TODO: use regex above
-					syspack.message = "Некорректный ник";
-					client->sendPacket(syspack);
-				}
-				else {
-					if (room->banNick(nick)){
-						auto m = room->findMemberByNick(nick);
-						if (m){
-							room->kickMember(m);
-						}
-						syspack.message = "Забанен";
-					} else {
-						syspack.message = "Ник уже в бане";
-					}
-					client->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "unbannick"){
-				string nick = parser.suffix();
-
-				if (nick.size() > 24 || nick.empty()){ //TODO: use regex above
-					syspack.message = "Некорректный ник";
-					client->sendPacket(syspack);
-				}
-				else {
-					if (room->unbanNick(nick)){
-						syspack.message = "Разбанен";
-					} else {
-						syspack.message = "Ник не был забанен";
-					}
-					client->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "banip"){
-				auto &list = room->getBannedIps();
-				if (!client->isAdmin() && list.size() > 100){ //TODO: constant to config
-					syspack.message = "Превышен лимит на количество забаненных IP";
-					member->sendPacket(syspack);
-				}
-				else if (parser.next(r_ip)){
-					string ip;
-					parser.read(0, ip);
-
-					if (room->banIp(ip)){
-						syspack.message = "IP забанен";
-					} else {
-						syspack.message = "IP уже в списке забаненных";
-					}
-					member->sendPacket(syspack);
-				}
-				else {
-					syspack.message = "Укажите корректный IP-адрес";
-					member->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "unbanip"){
-				if (parser.next(r_ip)){
-					string ip;
-					parser.read(0, ip);
-
-					if (room->unbanIp(ip)){
-						syspack.message = "IP разбанен";
-					} else {
-						syspack.message = "IP не был забанен";
-					}
-					member->sendPacket(syspack);
-				}
-				else {
-					syspack.message = "Укажите ID аккаунта пользователя";
-					member->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "banuid"){
-				auto &list = room->getBannedUids();
-				if (!client->isAdmin() && list.size() > 100){ //TODO: constant to config
-					syspack.message = "Превышен лимит на количество забаненных аккаунтов";
-					member->sendPacket(syspack);
-				}
-				else if (parser.next(r_int)){
-					uint uid;
-					parser.read(0, uid);
-
-					if (room->banUid(uid)){
-						syspack.message = "Аккаунт забанен";
-					} else {
-						syspack.message = "Аккаунт уже в списке забаненных";
-					}
-					member->sendPacket(syspack);
-				}
-				else {
-					syspack.message = "Укажите ID аккаунта пользователя";
-					member->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "unbanuid"){
-				if (parser.next(r_int)){
-					uint uid;
-					parser.read(0, uid);
-
-					if (room->unbanUid(uid)){
-						syspack.message = "Аккаунт разбанен";
-					} else {
-						syspack.message = "Аккаунт не был забанен";
-					}
-					member->sendPacket(syspack);
-				}
-				else {
-					syspack.message = "Укажите ID аккаунта пользователя";
-					member->sendPacket(syspack);
-				}
-			}
-			else if (cmd == "banlist"){
-				string res;
-				auto &nlist = room->getBannedNicks();
-
-				res += "Забаненные ники (" + to_string(nlist.size()) + "):\n";
-				for (auto s : nlist){
-					res += s;
-					res += "\n";
-				}
-
-				auto &ulist = room->getBannedUids();
-				res += "Забаненные аккаунты (" + to_string(ulist.size()) + "):\n";
-				for (auto s : ulist){
-					res += to_string(s);
-					res += "\n";
-				}
-
-				auto &ilist = room->getBannedIps();
-				res += "Забаненные IP (" + to_string(ilist.size()) + "):\n";
-				for (auto s : ilist){
-					res += s;
-					res += "\n";
-				}
-
-				syspack.message = res;
-				client->sendPacket(syspack);
-			}
-			else if (cmd == "userlist"){
-				string users = "Пользователи:\n";
-
-				for (auto m : room->getMembers()){
-					auto mc = m->getClient();
-					users += "#" + to_string(m->getId()) + " " + m->getNick() + " (uid " + to_string(mc->getID()) + ", " + mc->getIP() + ")\n";
-				}
-
-				syspack.message = users;
-				client->sendPacket(syspack);
-			}
-			else if (cmd == "moderlist"){
-				auto &mods = room->getModerators();
-				string res = "Модераторы:";
-				for (auto mod : mods){
-					res += "\n";
-					res += to_string(mod);
-				}
-
-				syspack.message = res;
-				member->sendPacket(syspack);
-			}
-			else {
-				badcmd = true;
-			}
-		}
-
-		if (badcmd && client->isAdmin()){
-			badcmd = false;
-
-			if (cmd == "roomlist"){
-				auto server = client->getServer();
-
-				string rooms = "Комнаты:\n";
-
-				for (auto r : server->getRooms()){
-					rooms += to_string(r->getOwner()) + ": " + r->getName() + "\n";
-				}
-
-				syspack.message = rooms;
-				client->sendPacket(syspack);
-			}
-			else if (cmd == "ipcounter"){
-				auto server = client->getServer();
-
-				string res = "Подключения:\n";
-				for (auto c : server->getConnectionsCounter()){
-					res += c.first + " - " + to_string(c.second) + "\n";
-				}
-
-				syspack.message = res;
-				member->sendPacket(syspack);
-			}
-			else {
-				badcmd = true;
-			}
-		}
-
-		if (badcmd && member->hasNick()){
-			badcmd = false;
-
-			if (cmd == "msg" || cmd == "umsg"){
-				string part;
-				uint mid = 0;
-
-				if (cmd[0] == 'm'){
-					if (parser.next(r_to_space)){
-						parser.read(0, part);
-					}
-				} else {
-					if (parser.next(r_int)){
-						parser.read(0, mid);
-					}
-					parser.next(r_to_space);
-				}
-
-				string smsg;
-				if (parser.next(r_spaces)){
-					smsg = parser.suffix();
-				}
-
-				if (regex_match(smsg, regex("\\s*"))){
-					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
-				} else {
-					MemberPtr m2;
-					if (cmd[0] == 'u'){
-						m2 = room->findMemberById(mid);
-					} else {
-						m2 = room->findMemberByNick(part);
-					}
-
-					if (!m2){
-						syspack.message = "Указанный пользователь не найден";
-						client->sendPacket(syspack);
-					} else {
-						PacketMessage pmsg(member, m2, smsg);
-						client->sendPacket(pmsg);
-						m2->sendPacket(pmsg);
-					}
-				}
-			}
-			else if (cmd == "me" || cmd == "do" || cmd == "n"){
-				string smsg = parser.suffix();
-
-				if (regex_match(smsg, regex("\\s*"))){
-					client->sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
-				} else {
-					PacketMessage pmsg(member, smsg);
-					switch (cmd[0]){
-						case 'm': pmsg.style = Style::me; break;
-						case 'd': pmsg.style = Style::event; break;
-						case 'n': pmsg.style = Style::offtop; break;
-						default: pmsg.style = Style::message; break;
-					}
-					room->sendPacketToAll(pmsg);
-				}
-			}
-			else {
-				badcmd = true;
-			}
 		}
 	}
 
 	if (badcmd){
-		syspack.message = "Такая команда не существует или вы не вошли в чат";
-		client->sendPacket(syspack);
+		member->sendPacket(PacketSystem(room->getName(), "Такая команда не существует или вы не вошли в чат"));
 	}
 
 	return true;
