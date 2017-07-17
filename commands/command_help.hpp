@@ -41,7 +41,7 @@ public:
 
 		auto room = member->getRoom();
 
-		string message = "Доступные команды:\n" + help_all + help_user;
+		string message = "\nДоступные команды:\n" + help_all + help_user;
 
 		if (member->isOwner()){
 			message += "\nВладелец комнаты:\n" + help_owner;
