@@ -31,6 +31,11 @@ Server::Server(int port)
 	};
 	
 	chat.on_open = [&, this](auto connection) {
+		auto iphdr = connection->header.find("X-Real-IP");
+		if (iphdr != connection->header.end()){
+			connection->remote_endpoint_address = iphdr->second;
+		}
+
 		ClientPtr cli = make_shared<Client>(this, connection);
 		cli->setSelfPtr(cli);
 
