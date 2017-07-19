@@ -113,6 +113,7 @@ private:
 
 public:
 	string ukey;
+	string api_key;
 	uint user_id;
 	string name;
 	

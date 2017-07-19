@@ -5,6 +5,7 @@
 #include "regex/regex.hpp"
 #include "commands/commands.hpp"
 #include "logger.hpp"
+#include "db.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -278,12 +279,12 @@ PacketAuth::~PacketAuth(){
 
 void PacketAuth::deserialize(const Json::Value &obj){
 	ukey = obj["ukey"].asString();
+	api_key = obj["api_key"].asString();
 }
 
 Json::Value PacketAuth::serialize() const {
 	Json::Value obj;
 	obj["type"] = (int) type;
-	//obj["ukey"] = ukey;
 	obj["user_id"] = user_id;
 	obj["name"] = name;
 	return obj;
@@ -292,38 +293,45 @@ Json::Value PacketAuth::serialize() const {
 void PacketAuth::process(Client &client){
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
-	if (!ukey.empty()){
-		Memcache cache;
-		Database db;
+	Database db;
+	try {
+		int uid = 0;
 
-		string id;
-		if (cache.get(string("chat-key-") + ukey, id)){
-			int tries = 3;
-			while (tries--){
-				try {
-					int uid = stoi(id.c_str());
+		if (!ukey.empty()){
+			Memcache cache;
+			string id;
 
-					auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
-					ps->setInt(1, uid);
-					auto rs = as_unique(ps->executeQuery());
-					if (rs->next()){
-						int gid = rs->getInt(2);
-						client.setID(uid);
-						client.setName(rs->getString(1));
-						client.setGirl(gid == 4);
-						client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
-					}
-					break;
-				} catch (SQLException &e){
-					Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
-					db.reconnect();
-				}
-			}
-
-			if (tries < 0){
-				client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
+			if (cache.get(string("chat-key-") + ukey, id)){
+				uid = stoi(id.c_str());
 			}
 		}
+		else if (!api_key.empty()){
+			auto ps = db.prepare("SELECT user_id FROM api_keys WHERE `key` = ?");
+			ps->setString(1, api_key);
+
+			auto rs = ps.executeQuery();
+			if (rs->next()){
+				uid = rs->getInt(1);
+			}
+		}
+
+		if (uid != 0){
+			auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
+			ps->setInt(1, uid);
+
+			auto rs = ps.executeQuery();
+			if (rs->next()){
+				int gid = rs->getInt(2);
+				client.setID(uid);
+				client.setName(rs->getString(1));
+				client.setGirl(gid == 4);
+				client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
+			}
+		}
+	} catch (SQLException &e){
+		Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+		db.reconnect();
+		client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
 	}
 
 	user_id = client.getID();
