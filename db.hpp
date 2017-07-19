@@ -12,43 +12,41 @@
 
 #include "config.hpp"
 #include "algo.hpp"
+#include "logger.hpp"
 
 using std::string;
 using std::unique_ptr;
 
+class Database;
+
 template <typename T>
 class SafeStatement {
 private:
-	//using T = sql::PreparedStatement;
+	Database *db;
 	unique_ptr<T> pst;
 public:
 	SafeStatement(SafeStatement<T> &) = delete;
 	SafeStatement(const SafeStatement<T> &) = delete;
 
-	explicit SafeStatement(T *st){
+	explicit SafeStatement(Database &fdb, T *st){
 		pst.reset(st);
+		db = &fdb;
 	}
 
 	SafeStatement(SafeStatement &&ss){
 		pst.swap(ss.pst);
+		db = ss.db;
 	}
 
 	SafeStatement<T> &operator = (SafeStatement<T> &&ss){
 		pst.swap(ss.pst);
+		db = ss.db;
 		return *this;
 	}
 
-	bool execute(){
-		return pst && pst->execute();
-	}
-
-	unique_ptr<sql::ResultSet> executeQuery(){
-		return pst ? as_unique(pst->executeQuery()) : nullptr;
-	}
-
-	int executeUpdate(){
-		return pst ? pst->executeUpdate() : 0;
-	}
+	bool execute();
+	unique_ptr<sql::ResultSet> executeQuery();
+	int executeUpdate();
 
 	T *operator -> (){
 		return pst.get();
@@ -86,19 +84,84 @@ public:
 	void reconnect(){
 		sql::mysql::MySQL_Driver driver;
 		auto dbconf = config["database"];
+
+		if (conn){
+			conn->close();
+		}
+
 		conn = unique_ptr<sql::Connection>(driver.connect(dbconf["host"].asString(), dbconf["user"].asString(), dbconf["password"].asString()));
 		init();
 	}
 	
 	SafeStatement<sql::Statement> statement(){
-		return SafeStatement<sql::Statement>(conn->createStatement());
+		return SafeStatement<sql::Statement>(*this, conn->createStatement());
 	}
 	
 	SafeStatement<sql::PreparedStatement> prepare(const string &sql){
-		return SafeStatement<sql::PreparedStatement>(conn->prepareStatement(sql));
+		return SafeStatement<sql::PreparedStatement>(*this, conn->prepareStatement(sql));
 	}
 
 };
+
+template <typename T>
+bool SafeStatement<T>::execute(){
+	if (pst){
+		int tries = 3;
+		while (tries--){
+			try {
+				return pst->execute();
+			} catch (sql::SQLException &e){
+				if (tries < 0){
+					throw;
+				}
+
+				Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+				db->reconnect();
+			}
+		}
+	}
+	return false;
+}
+
+template <typename T>
+unique_ptr<sql::ResultSet> SafeStatement<T>::executeQuery(){
+	if (pst){
+		int tries = 3;
+		while (tries--){
+			try {
+				return as_unique(pst->executeQuery());
+			} catch (sql::SQLException &e){
+				if (tries <= 0){
+					throw;
+				}
+
+				Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+				db->reconnect();
+			}
+		}
+	}
+	return nullptr;
+}
+
+template <typename T>
+int SafeStatement<T>::executeUpdate(){
+	if (pst){
+		int tries = 3;
+		while (tries--){
+			try {
+				return pst->executeUpdate();
+			} catch (sql::SQLException &e){
+				if (tries < 0){
+					throw;
+				}
+
+				Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+				db->reconnect();
+			}
+		}
+	}
+	return 0;
+}
 
 #endif
 
