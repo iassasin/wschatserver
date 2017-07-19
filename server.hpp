@@ -14,7 +14,6 @@ using WSServer = WebSocketServerEx;
 #include "client.hpp"
 #include "packet.hpp"
 #include "memcached.hpp"
-#include "db.hpp"
 #include "rooms.hpp"
 
 using namespace std;
