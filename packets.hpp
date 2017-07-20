@@ -157,6 +157,8 @@ public:
 	string target;
 	uint member_id;
 	string login;
+	bool auto_login;
+	bool load_history;
 
 	PacketJoin();
 	PacketJoin(MemberPtr member);

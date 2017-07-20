@@ -415,6 +415,8 @@ void PacketStatus::process(Client &client){
 PacketJoin::PacketJoin(){
 	type = Type::join;
 	member_id = 0;
+	auto_login = true;
+	load_history = true;
 }
 
 PacketJoin::PacketJoin(MemberPtr member) : PacketJoin(){
@@ -429,6 +431,8 @@ PacketJoin::~PacketJoin(){
 
 void PacketJoin::deserialize(const Json::Value &obj){
 	target = obj["target"].asString();
+	auto_login = obj["auto_login"].asBool();
+	load_history = obj["load_history"].asBool();
 }
 
 Json::Value PacketJoin::serialize() const {
@@ -455,29 +459,34 @@ void PacketJoin::process(Client &client){
 
 	auto m = client.joinRoom(room);
 	if (m){
-		auto info = room->getStoredMemberInfo(m);
-		string nick;
-		if (info.user_id != 0){
-			nick = info.nick;
-			m->setGirl(info.girl);
-			m->setColor(info.color);
-		}
-
-		for (const string &s : room->getHistory()){
-			client.sendRawData(s);
-		}
-
-		if (!m->isModer()){
-			if (room->isBannedNick(nick)){
-				m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") запрещен, выберите другой ник"));
-				nick.clear();
+		if (load_history){
+			for (const string &s : room->getHistory()){
+				client.sendRawData(s);
 			}
 		}
 
-		auto member = room->findMemberByNick(nick);
-		if (member){
-			m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
-			nick.clear();
+		string nick;
+
+		if (auto_login){
+			auto info = room->getStoredMemberInfo(m);
+			if (info.user_id != 0){
+				nick = info.nick;
+				m->setGirl(info.girl);
+				m->setColor(info.color);
+			}
+
+			if (!m->isModer()){
+				if (room->isBannedNick(nick)){
+					m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") запрещен, выберите другой ник"));
+					nick.clear();
+				}
+			}
+
+			auto member = room->findMemberByNick(nick);
+			if (member){
+				m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
+				nick.clear();
+			}
 		}
 
 		if (nick.empty()){
