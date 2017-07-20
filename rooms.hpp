@@ -148,6 +148,8 @@ public:
 	inline const unordered_set<string> &getBannedIps(){ return bannedIps; }
 	inline const unordered_set<uint> &getBannedUids(){ return bannedUids; }
 
+	inline bool isBannedNick(const string &nick){ return bannedNicks.find(nick) != bannedNicks.end(); }
+
 	inline bool banNick(const string &nick){ return bannedNicks.insert(nick).second; }
 	inline bool banIp(const string &ip){ return bannedIps.insert(ip).second; }
 	inline bool banUid(uint uid){ return bannedUids.insert(uid).second; }
@@ -166,6 +168,8 @@ public:
 	MemberPtr findMemberByClient(ClientPtr client);
 	MemberPtr findMemberByNick(string nick);
 	MemberPtr findMemberById(uint id);
+
+	MemberInfo getStoredMemberInfo(MemberPtr member);
 
 	bool kickMember(ClientPtr user, string reason = "");
 	bool kickMember(MemberPtr member, string reason = "");

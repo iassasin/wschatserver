@@ -453,7 +453,40 @@ void PacketJoin::process(Client &client){
 		return;
 	}
 
-	client.joinRoom(room);
+	auto m = client.joinRoom(room);
+	if (m){
+		auto info = room->getStoredMemberInfo(m);
+		string nick;
+		if (info.user_id != 0){
+			nick = info.nick;
+			m->setGirl(info.girl);
+			m->setColor(info.color);
+		}
+
+		for (const string &s : room->getHistory()){
+			client.sendRawData(s);
+		}
+
+		if (!m->isModer()){
+			if (room->isBannedNick(nick)){
+				m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") запрещен, выберите другой ник"));
+				nick.clear();
+			}
+		}
+
+		auto member = room->findMemberByNick(nick);
+		if (member){
+			m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
+			nick.clear();
+		}
+
+		if (nick.empty()){
+			m->sendPacket(PacketSystem(room->getName(), "Перед началом общения укажите свой ник: /nick MyNick"));
+		}
+		else {
+			m->setNick(nick);
+		}
+	}
 }
 
 //----

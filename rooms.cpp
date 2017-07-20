@@ -3,7 +3,7 @@
 #include <ctime>
 
 MemberInfo::MemberInfo(){
-
+	user_id = 0;
 }
 
 MemberInfo::MemberInfo(MemberPtr member){
@@ -42,8 +42,8 @@ void Member::setNick(const string &nnick){
 
 	auto roomp = room.lock();
 
-	if (!isAdmin() && roomp->getBannedNicks().find(nnick) != roomp->getBannedNicks().end()){
-		sendPacket(PacketSystem(roomp->getName(), "Данный ник забанен, выберите другой"));
+	if (!isModer() && roomp->isBannedNick(nnick)){
+		sendPacket(PacketSystem(roomp->getName(), "Данный ник запрещен, выберите другой"));
 		return;
 	}
 
@@ -62,6 +62,10 @@ void Member::setNick(const string &nnick){
 	}
 
 	roomp->sendPacketToAll(spack);
+
+	if (!nick.empty()){
+		Logger::info(roomp->getName(), ": Login = ", nick, " (", client->getIP(), ")");
+	}
 }
 
 bool Member::isAdmin(){ return client->isAdmin(); }
@@ -218,21 +222,6 @@ MemberPtr Room::addMember(ClientPtr user){
 	m->setSelfPtr(m);
 	m->id = genNextMemberId();
 
-	uint uid = user->getID();
-	if (user->isGuest() || membersInfo.find(uid) == membersInfo.end()){
-		m->nick = user->getName();
-		m->girl = user->isGirl();
-		m->color = user->getColor();
-	} else {
-		MemberInfo info = membersInfo[uid];
-		m->nick = info.nick;
-		m->girl = info.girl;
-		m->color = info.color;
-	}
-
-	string nick;
-	int warn = 0;
-
 	if (!m->isModer()){
 		if (bannedIps.find(user->getIP()) != bannedIps.end()){
 			user->sendPacket(PacketSystem("", "Вы были забанены"));
@@ -242,51 +231,12 @@ MemberPtr Room::addMember(ClientPtr user){
 			user->sendPacket(PacketSystem("", user->getID() == 0 ? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте" : "Вы были забанены"));
 			return nullptr;
 		}
-
-		if (bannedNicks.find(m->nick) != bannedNicks.end()){
-			warn = 2;
-			nick = m->nick;
-			m->nick = "";
-		}
-	}
-
-	auto member = findMemberByNick(m->nick);
-	if (member){
-		if (m->nick == user->getName()){
-			kickMember(member);
-		} else {
-			warn = 1;
-			nick = m->nick;
-			m->nick = "";
-		}
-	}
-
-	if (!m->getNick().empty()){
-		Logger::info(name, ": Login = ", m->getNick(), " (", user->getIP(), ")");
-		sendPacketToAll(PacketStatus(m, Member::Status::online));
 	}
 
 	auto res = members.insert(m);
 
 	user->sendPacket(PacketJoin(m));
 	user->sendPacket(PacketOnlineList(self.lock()));
-
-	for (const string &s : getHistory()){
-		user->sendRawData(s);
-	}
-
-	if (warn == 1){
-		m->sendPacket(PacketSystem(name, "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
-	}
-	else if (warn == 2){
-		m->sendPacket(PacketSystem(name, "Выбранный вами ранее ник (" + nick + ") забанен, выберите другой ник"));
-	}
-	else if (m->nick.empty()){
-		m->sendPacket(PacketSystem(name, "Перед началом общения укажите свой ник: /nick MyNick"));
-	}
-	else {
-		m->sendPacket(PacketSystem(name, "Вы пришли в комнату"));
-	}
 
 	if (res.second){
 		return *res.first;
@@ -309,6 +259,20 @@ bool Room::removeMember(ClientPtr user){
 	}
 
 	return members.erase(m) > 0;
+}
+
+MemberInfo Room::getStoredMemberInfo(MemberPtr member){
+	uint uid = member->getClient()->getID();
+	if (uid == 0){
+		return MemberInfo();
+	}
+
+	auto mi = membersInfo.find(uid);
+	if (mi == membersInfo.end()){
+		return MemberInfo();
+	}
+
+	return mi->second;
 }
 
 bool Room::kickMember(ClientPtr user, string reason){
