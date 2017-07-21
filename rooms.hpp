@@ -51,6 +51,8 @@ public:
 		gender_change,
 		color_change,
 		back,
+		typing,
+		stop_typing,
 	};
 private:
 	friend class Room;
