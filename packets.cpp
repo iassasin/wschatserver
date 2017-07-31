@@ -104,11 +104,7 @@ Json::Value PacketMessage::serialize() const {
 	obj["from"] = from_id;
 	obj["to"] = to_id;
 	obj["style"] = (uint) style;
-	if (message.size() > 9500){
-		obj["message"] = string(message, 0, 9500);
-	} else {
-		obj["message"] = message;
-	}
+	obj["message"] = message;
 	return obj;
 }
 
