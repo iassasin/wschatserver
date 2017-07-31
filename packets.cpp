@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <memory>
 #include <sstream>
-#include <utf8.h>
 
 using namespace sql;
 using namespace sinlib;
