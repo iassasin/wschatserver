@@ -27,5 +27,7 @@ unique_ptr<T> as_unique(T *v){
 	return unique_ptr<T>(v);
 }
 
+void replaceInvalidUtf8(string &str, char replacement = '?');
+
 #endif
 

@@ -1,5 +1,6 @@
 #include "algo.hpp"
 #include <locale>
+#include <utf8.h>
 
 using namespace std;
 
@@ -18,4 +19,15 @@ string date(const string &format){
 
 bool startsWith(const string &str, const string &needle){
 	return string(str, 0, needle.size()) == needle;
+}
+
+void replaceInvalidUtf8(string &str, char replacement){
+	auto start = begin(str);
+	auto send = end(str);
+
+	while (start != send){
+		start = utf8::find_invalid(start, send);
+		if (start != send)
+			*start++ = replacement;
+	}
 }

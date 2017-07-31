@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <memory>
 #include <sstream>
+#include <utf8.h>
 
 using namespace sql;
 using namespace sinlib;
@@ -89,9 +90,10 @@ void PacketMessage::deserialize(const Json::Value &obj){
 	msgtime = obj["time"].asUInt64();
 
 	message = regex_replace(message, regex("\n{3,}"), "\n\n\n");
-	if (message.size() > 9500){
-		message = string(message, 0, 9500);
+	if (message.size() > 30*1024){
+		message = string(message, 0, 30*1024);
 	}
+	replaceInvalidUtf8(message, ' ');
 }
 
 Json::Value PacketMessage::serialize() const {
