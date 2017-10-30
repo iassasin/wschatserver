@@ -3,9 +3,11 @@
 
 #include <libmemcached/memcached.h>
 #include <string>
+#include <sstream>
 #include <ctime>
 #include <memory>
 
+#include "logger.hpp"
 #include "config.hpp"
 
 using std::string;
@@ -17,7 +19,7 @@ private:
 		memcached_st *mci;
 
 		memcached_st_my(){
-			mci = memcached(NULL, 0);
+			mci = memcached(nullptr, 0);
 			if (mci){
 				memcached_server_add(mci, config["memcache"]["host"].asCString(), config["memcache"]["port"].asUInt());
 			}
@@ -57,7 +59,7 @@ public:
 		size_t value_length = 0;
 
 		char *value = memcached_get(mci->mci, key.c_str(), key.length(), &value_length, &flags, &rc);
-		if (value != NULL){
+		if (value != nullptr){
 			val = *(T *) value;
 			free(value);
 			return true;
@@ -72,9 +74,21 @@ public:
 		size_t value_length = 0;
 
 		char *value = memcached_get(mci->mci, key.c_str(), key.length(), &value_length, &flags, &rc);
-		if (value != NULL){
+		if (value != nullptr){
 			val = string(value, value_length);
 			free(value);
+			return true;
+		}
+
+		return false;
+	}
+
+	template<typename T>
+	bool getPhp(const std::string &key, T &val){
+		string value;
+		if (get(key, value)){
+			istringstream ss(value);
+			ss >> val;
 			return true;
 		}
 
@@ -84,8 +98,13 @@ public:
 	template<typename T>
 	bool set(const std::string &key, const T &value, time_t expiration = 0, uint32_t flags = 0){
 		memcached_return_t rc = memcached_set(mci->mci, key.c_str(), key.length(),
-				&value, sizeof(T), expiration, flags);
+				(const char *) &value, sizeof(T), expiration, flags);
 		return memcached_success(rc);
+	}
+
+	template<typename T>
+	bool setPhp(const std::string &key, const T &value, time_t expiration = 0, uint32_t flags = 0){
+		return set(key, std::to_string(value), expiration, flags);
 	}
 
 	bool set(const std::string &key, const string &value, time_t expiration = 0, uint32_t flags = 0){

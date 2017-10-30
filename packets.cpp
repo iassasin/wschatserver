@@ -6,6 +6,7 @@
 #include "commands/commands.hpp"
 #include "logger.hpp"
 #include "db.hpp"
+#include "gate.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -291,6 +292,7 @@ void PacketAuth::process(Client &client){
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
 	Database db;
+	Gate gate;
 	try {
 		int uid = 0;
 
@@ -303,12 +305,18 @@ void PacketAuth::process(Client &client){
 			}
 		}
 		else if (!api_key.empty()){
+			if (!gate.auth(client.getIP())){
+				client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
+				return;
+			}
+
 			auto ps = db.prepare("SELECT user_id FROM api_keys WHERE `key` = ?");
 			ps->setString(1, api_key);
 
 			auto rs = ps.executeQuery();
 			if (rs->next()){
 				uid = rs->getInt(1);
+				gate.auth(client.getIP(), true);
 			}
 		}
 
