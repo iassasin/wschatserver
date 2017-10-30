@@ -20,6 +20,7 @@ public:
 		access_denied,
 		invalid_target,
 		already_exists,
+		incorrect_loginpass,
 	};
 public:
 	Type source;
@@ -116,6 +117,7 @@ public:
 	string api_key;
 	uint user_id;
 	string name;
+	string password;
 	
 	PacketAuth();
 	virtual ~PacketAuth();
