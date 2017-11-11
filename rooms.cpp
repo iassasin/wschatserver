@@ -279,7 +279,6 @@ bool Room::kickMember(ClientPtr user, string reason){
 	auto m = findMemberByClient(user);
 	if (m){
 		return kickMember(m, reason);
-		return true;
 	}
 
 	return false;
@@ -291,6 +290,9 @@ bool Room::kickMember(MemberPtr member, string reason){
 	if (!member->getNick().empty()){
 		sendPacketToAll(PacketStatus(member, Member::Status::offline));
 	}
+
+	member->sendPacket(PacketLeave(name));
+
 	return members.erase(member) > 0;
 }
 
