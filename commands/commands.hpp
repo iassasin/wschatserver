@@ -14,6 +14,7 @@
 #include "command_private_message.hpp"
 #include "command_moder.hpp"
 #include "command_ban.hpp"
+#include "command_join.hpp"
 #include "command_kick.hpp"
 #include "command_userlist.hpp"
 #include "command_roomlist.hpp"
