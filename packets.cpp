@@ -153,7 +153,8 @@ CommandProcessor PacketMessage::cmd_all {
 	new CommandHelp(),
 	new CommandNick(),
 	new CommandGender(),
-	new CommandColor(),
+    new CommandColor(),
+	new CommandJoin(),
 };
 
 CommandProcessor PacketMessage::cmd_user {
