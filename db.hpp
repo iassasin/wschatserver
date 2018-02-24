@@ -9,6 +9,7 @@
 #include <cppconn/exception.h>
 #include <memory>
 #include <string>
+#include <ctime>
 
 #include "config.hpp"
 #include "algo.hpp"
@@ -60,6 +61,7 @@ public:
 class Database {
 private:
 	static unique_ptr<sql::Connection> conn;
+	static time_t lastReconnectionTime;
 	
 	void init(){
 		execute("set names utf8");
@@ -76,7 +78,7 @@ private:
 	}
 public:
 	Database(){
-		if (!conn || conn->isClosed()){
+		if (!conn || conn->isClosed() || time(nullptr) - lastReconnectionTime >= 60*60*12){
 			reconnect();
 		}
 	}
@@ -90,6 +92,7 @@ public:
 		}
 
 		conn = unique_ptr<sql::Connection>(driver.connect(dbconf["host"].asString(), dbconf["user"].asString(), dbconf["password"].asString()));
+		lastReconnectionTime = time(nullptr);
 		init();
 	}
 	
