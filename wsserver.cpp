@@ -17,16 +17,31 @@ static void save_state(){
 	}
 }
 
-static void sighandler(int signum){
+static void sigShutdown(int signum){
 	Logger::info("Received signal ", signum);
 	server->stop();
 	save_state();
 	exit(signum != SIGTERM ? signum : 0);
 }
 
-int main() {
-	if (signal(SIGTERM, sighandler) == SIG_ERR || signal(SIGINT, sighandler) == SIG_ERR || signal(SIGABRT, sighandler) == SIG_ERR){
-		Logger::error("Can't set signals. Aborting.");
+static void sigSave(int signum){
+	Logger::info("Received signal ", signum);
+	save_state();
+}
+
+int main(){
+	struct sigaction action{};
+
+	action.sa_handler = sigShutdown;
+	for (int sig : { SIGTERM, SIGINT, SIGABRT }){
+		if (sigaction(sig, &action, nullptr) != 0){
+			Logger::error("Can't set signal ", sig, ". Aborting.");
+			return 1;
+		}
+	}
+
+	if (signal(SIGUSR1, sigSave) == SIG_ERR){
+		Logger::error("Can't set signal ", SIGUSR1, ". Aborting.");
 		return 1;
 	}
 
