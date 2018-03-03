@@ -1,5 +1,5 @@
 CC = g++
-CPPFLAGS = -Wall -O3 -std=c++1y -flto
+CPPFLAGS = -Wall -O3 -std=c++1y -flto -I./redox/include
 
 SOURCES = $(wildcard *.cpp) $(wildcard regex/*.cpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
@@ -7,7 +7,7 @@ OBJECTS = $(SOURCES:%.cpp=%.o)
 APP_NAME = wsserver
 APP = $(APP_NAME)
 
-all: LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -lmemcached -ljsoncpp -lssl
+all: LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -lmemcached -ljsoncpp -lssl -L./redox/build -lredox_static -lev -lhiredis
 all: $(APP)
 	strip $(APP)
 

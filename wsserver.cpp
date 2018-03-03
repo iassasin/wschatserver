@@ -2,7 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <exception>
-#include <signal.h>
+#include <csignal>
 
 #include "logger.hpp"
 

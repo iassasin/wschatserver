@@ -6,9 +6,9 @@
 		"private_key": "cert/privkey.pem"
 	},
 	
-	"memcache": {
+	"redis": {
 		"host": "localhost",
-		"port": 11211
+		"port": 6379
 	},
 
 	"database": {

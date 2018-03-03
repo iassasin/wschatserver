@@ -306,12 +306,9 @@ void PacketAuth::process(Client &client){
 		};
 
 		if (!ukey.empty()){
-			Memcache cache;
-			string id;
+			Redis cache;
 
-			if (cache.get(string("chat-key-") + ukey, id)){
-				uid = stoi(id);
-			}
+			cache.get("chat-key-" + ukey, uid);
 		}
 		else if (!api_key.empty()){
 			if (!gate.auth(client.getIP())){

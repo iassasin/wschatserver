@@ -5,19 +5,22 @@
 #ifndef WSSERVER_GATE_HPP
 #define WSSERVER_GATE_HPP
 
-#include "memcached.hpp"
+#include "redis.hpp"
 
 #include <string>
+#include <jsoncpp/json/json.h>
 
 class Gate {
 protected:
-	Memcache md;
+	Redis md;
 
 	bool _tries(const std::string &name, const std::string &key, int tries, int timeout){
+		Json::Value val;
+
 		string mdkey = "gate-" + name + "-" + key;
 		int cnt;
 
-		if (!md.getPhp(mdkey, cnt)){
+		if (!md.get(mdkey, cnt)){
 			cnt = 0;
 		}
 
@@ -25,7 +28,7 @@ protected:
 		if (cnt > tries){
 			return false;
 		}
-		md.setPhp(mdkey, cnt, timeout);
+		md.set(mdkey, cnt, timeout);
 
 		return true;
 	}
@@ -33,8 +36,8 @@ protected:
 	void _resetTries(const std::string &name, const std::string &key){
 		string mdkey = "gate-" + name + "-" + key;
 		int cnt = 0;
-		if (md.getPhp(mdkey, cnt) && cnt > 0){
-			md.setPhp(mdkey, 0, 1);
+		if (md.get(mdkey, cnt) && cnt > 0){
+			md.set(mdkey, 0, 1);
 		}
 	}
 public:

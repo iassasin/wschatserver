@@ -1,3 +1,7 @@
 [submodule "simple_wss"]
       path = simple_wss
       url = https://github.com/eidheim/Simple-WebSocket-Server.git
+
+[submodule "redox"]
+	path = redox
+	url = https://github.com/hmartiro/redox.git
