@@ -1,4 +1,4 @@
 #include "redis.hpp"
 
-Redox Redis::redoxInstance;
-bool Redis::connected = false;
+boost::asio::io_service Redis::io;
+redisclient::RedisSyncClient Redis::redisInstance(io);

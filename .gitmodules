@@ -2,6 +2,6 @@
       path = simple_wss
       url = https://github.com/eidheim/Simple-WebSocket-Server.git
 
-[submodule "redox"]
-	path = redox
-	url = https://github.com/hmartiro/redox.git
+[submodule "redisclient"]
+	path = redisclient
+	url = https://github.com/nekipelov/redisclient.git

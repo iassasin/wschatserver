@@ -1,63 +1,64 @@
 #ifndef MEMCACHED_H_
 #define MEMCACHED_H_
 
-#include <redox.hpp>
 #include <string>
 #include <sstream>
 #include <ctime>
 #include <memory>
 #include <jsoncpp/json/json.h>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <redisclient/redissyncclient.h>
 
 #include "logger.hpp"
 #include "config.hpp"
 
 using std::string;
 using std::unique_ptr;
-using redox::Redox;
 
 class Redis {
 private:
-	static Redox redoxInstance;
-	static bool connected;
+	static boost::asio::io_service io;
+	static redisclient::RedisSyncClient redisInstance;
 	
 	Redis(const Redis &) = delete;
 
 	static bool isConnectionValid(){
-		if (!connected){
+		if (!redisInstance.isConnected()){
 			return false;
 		}
 
-		auto &cmd = redoxInstance.commandSync<string>({"PING"});
-		bool ok = cmd.ok() && cmd.reply() == "PONG";
-		cmd.free();
-		return ok;
+		auto cmd = redisInstance.command("PING", {});
+		return cmd.isOk() && cmd.toString() == "PONG";
 	}
 public:
 	Redis(){
 		if (!isConnectionValid()){
-			redoxInstance.connect(config["redis"]["host"].asCString(), config["redis"]["port"].asUInt());
-			connected = true;
+			boost::asio::ip::tcp::resolver resolver(io);
+			boost::asio::ip::tcp::resolver::query query(
+					config["redis"]["host"].asCString(),
+					std::to_string(config["redis"]["port"].asUInt())
+			);
+			redisInstance.connect(resolver.resolve(query)->endpoint());
 		}
 	}
 
 	template<typename T>
 	bool get(const std::string &key, T &val){
-		bool ok = false;
+		auto cmd = redisInstance.command("GET", {key});
 
-		auto &cmd = redoxInstance.commandSync<string>({"GET", key});
-
-		if (cmd.status() == redox::Command<string>::OK_REPLY){
-			string reply = cmd.reply();
+		if (cmd.isOk()){
+			string reply = cmd.toString();
 			istringstream ss(reply);
 			ss >> val;
-			ok = true;
+			return true;
 		}
-		else if (cmd.status() == redox::Command<string>::NIL_REPLY){
+		else if (cmd.isNull()){
 
 		}
 
-		cmd.free();
-		return ok;
+		return false;
 	}
 
 	bool getJson(const std::string &key, Json::Value &val){
@@ -73,17 +74,17 @@ public:
 	template<typename T>
 	bool set(const std::string &key, const T &value, time_t expiration = 0){
 		if (expiration > 0){
-			return redoxInstance.commandSync({"SETEX", std::to_string(expiration), std::to_string(value)});
+			return redisInstance.command("SETEX", {std::to_string(expiration), std::to_string(value)}).isOk();
 		} else {
-			return redoxInstance.set(key, std::to_string(value));
+			return redisInstance.command("SET", {key, std::to_string(value)}).isOk();
 		}
 	}
 
 	bool set(const std::string &key, const string &value, time_t expiration = 0){
 		if (expiration > 0){
-			return redoxInstance.commandSync({"SETEX", std::to_string(expiration), value});
+			return redisInstance.command("SETEX", {std::to_string(expiration), value}).isOk();
 		} else {
-			return redoxInstance.set(key, value);
+			return redisInstance.command("SET", {key, value}).isOk();
 		}
 	}
 
