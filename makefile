@@ -1,5 +1,8 @@
 CC = g++
-CPPFLAGS = -Wall -O3 -std=c++1y -flto -I./redisclient/src
+
+INCLUDES = -I./redisclient/src
+CPPFLAGS = -Wall -O3 -std=c++1y -flto $(INCLUDES)
+LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -ljsoncpp -lssl
 
 SOURCES = $(wildcard *.cpp) $(wildcard regex/*.cpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
@@ -7,7 +10,6 @@ OBJECTS = $(SOURCES:%.cpp=%.o)
 APP_NAME = wsserver
 APP = $(APP_NAME)
 
-all: LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -ljsoncpp -lssl
 all: $(APP)
 	strip $(APP)
 
@@ -15,7 +17,7 @@ static_boost: LDLIBS = -lpthread -Wl,-Bstatic -lboost_system -Wl,-Bdynamic -lcry
 static_boost: $(APP)
 	strip $(APP)
 
-debug: CPPFLAGS = -D_DEBUG_ -Wall -g3 -std=c++1y
+debug: CPPFLAGS = -D_DEBUG_ -Wall -g3 -std=c++1y $(INCLUDES)
 debug: $(OBJECTS)
 	$(LINK.o) $^ $(LDLIBS) -o $(APP)
 

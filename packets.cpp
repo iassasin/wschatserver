@@ -527,6 +527,8 @@ void PacketJoin::process(Client &client){
 			}
 		}
 
+		m->sendPacket(PacketSystem(room->getName(), "Введите /help для получения списка всех доступных команд"));
+
 		if (nick.empty()){
 			m->sendPacket(PacketSystem(room->getName(), "Перед началом общения укажите свой ник: /nick MyNick"));
 		}
