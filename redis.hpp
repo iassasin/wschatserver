@@ -40,7 +40,8 @@ public:
 					config["redis"]["host"].asCString(),
 					std::to_string(config["redis"]["port"].asUInt())
 			);
-			redisInstance.connect(resolver.resolve(query)->endpoint());
+			auto ep = resolver.resolve(query)->endpoint();
+			redisInstance.connect(ep);
 		}
 	}
 
@@ -48,14 +49,14 @@ public:
 	bool get(const std::string &key, T &val){
 		auto cmd = redisInstance.command("GET", {key});
 
-		if (cmd.isOk()){
+		if (cmd.isNull()){
+
+		}
+		else if (cmd.isOk()){
 			string reply = cmd.toString();
 			istringstream ss(reply);
 			ss >> val;
 			return true;
-		}
-		else if (cmd.isNull()){
-
 		}
 
 		return false;
