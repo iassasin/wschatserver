@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4)
 project(wsserver)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Debug)
 	set(CMAKE_CXX_FLAGS "-flto ${CMAKE_CXX_FLAGS}")
@@ -9,6 +9,7 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Debug)
 endif ()
 
 include_directories(redisclient/src)
+include_directories(mysql_cppconn)
 
 set(SOURCE_FILES
 		simple_wss/server_ws.hpp
@@ -41,7 +42,7 @@ set(SOURCE_FILES
 		commands/command_roomlist.hpp
 		commands/command_ipcounter.hpp commands/command_help.hpp logger.hpp gate.hpp)
 
-find_package(Boost 1.58 COMPONENTS system regex REQUIRED)
+find_package(Boost COMPONENTS system regex REQUIRED)
 find_library(MYSQLCPPCONN mysqlcppconn)
 find_library(CRYPTO crypto)
 find_library(JSONCPP jsoncpp)
