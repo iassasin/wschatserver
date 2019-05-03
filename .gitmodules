@@ -1,6 +1,6 @@
 [submodule "simple_wss"]
       path = simple_wss
-      url = https://github.com/eidheim/Simple-WebSocket-Server.git
+      url = https://gitlab.com/eidheim/Simple-WebSocket-Server.git
 
 [submodule "redisclient"]
 	path = redisclient
