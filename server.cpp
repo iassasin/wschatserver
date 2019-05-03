@@ -33,7 +33,8 @@ Server::Server(int port)
 	chat.on_open = [&, this](auto connection) {
 		auto iphdr = connection->header.find("X-Real-IP");
 		if (iphdr != connection->header.end()){
-			connection->remote_endpoint_address = iphdr->second;
+			// TODO: to Client class
+			// connection->remote_endpoint_address = iphdr->second;
 		}
 
 		ClientPtr cli = make_shared<Client>(this, connection);
@@ -44,7 +45,7 @@ Server::Server(int port)
 		auto &cnt = connectionsCountFromIp[cli->getIP()];
 		if (cnt >= 5){ //TODO: to config
 			Logger::info("Connections limit reached for ", cli->getIP());
-			server.send_close(connection, 0);
+			connection->send_close(0);
 		}
 		++cnt;
 
@@ -52,13 +53,14 @@ Server::Server(int port)
 	};
 	
 	chat.on_close = [&](auto connection, int status, const string& reason) {
-	    Logger::info("Closed connection from ", connection->remote_endpoint_address, " with status code ", status);
+		auto ip = connection->remote_endpoint_address();
+	    Logger::info("Closed connection from ", ip, " with status code ", status);
 
-		auto &cnt = connectionsCountFromIp[connection->remote_endpoint_address];
+		auto &cnt = connectionsCountFromIp[ip];
 		--cnt;
 
 		if (cnt <= 0){
-			connectionsCountFromIp.erase(connection->remote_endpoint_address);
+			connectionsCountFromIp.erase(ip);
 		}
 
 	    if (clients.find(connection) != clients.end()){
@@ -68,14 +70,15 @@ Server::Server(int port)
 	};
 	
 	chat.on_error = [&](auto connection, const boost::system::error_code& ec) {
-		Logger::warn("Error in connection from ", connection->remote_endpoint_address,
+		auto ip = connection->remote_endpoint_address();
+		Logger::warn("Error in connection from ", ip,
 				". Error: ", ec, ", error message: ", ec.message());
 
-		auto &cnt = connectionsCountFromIp[connection->remote_endpoint_address];
+		auto &cnt = connectionsCountFromIp[ip];
 		--cnt;
 
 		if (cnt <= 0){
-			connectionsCountFromIp.erase(connection->remote_endpoint_address);
+			connectionsCountFromIp.erase(ip);
 		}
 
 		if (clients.find(connection) != clients.end()){
@@ -139,27 +142,22 @@ void Server::deserialize(const Json::Value &val){
 }
 
 void Server::sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata){
-	auto response_ss = make_shared<SendStream>();
-	*response_ss << rdata;
-	server.send(conn, response_ss);
+	conn->send(rdata);
 }
 
 void Server::sendPacket(shared_ptr<WSServerBase::Connection> conn, const Packet &pack){
 	Json::FastWriter wr;
-	auto response_ss = make_shared<SendStream>();
-	*response_ss << wr.write(pack.serialize());
-	server.send(conn, response_ss);
+	conn->send(wr.write(pack.serialize()));
 }
 
 void Server::sendPacketToAll(const Packet &pack){
 	Json::FastWriter wr;
-	auto response_ss = make_shared<SendStream>();
-	string spack = wr.write(pack.serialize());
+	auto response_ss = make_shared<OutMessage>();
+	*response_ss << wr.write(pack.serialize());
 
-	*response_ss << spack;
 	for (auto conn : server.get_connections()){
-		//response_ss->seekg(0);
-		server.send(conn, response_ss);
+		//TODO: maybe response_ss->seekg(0);
+		conn->send(response_ss);
 	}
 }
 
@@ -195,7 +193,7 @@ void Server::kick(ClientPtr client){
 	auto conn = client->getConnection();
 	clients.erase(conn);
 	client->onDisconnect();
-	server.send_close(conn, 0);
+	conn->send_close(0);
 }
 
 RoomPtr Server::createRoom(string name){

@@ -57,7 +57,7 @@ public:
 	inline string getName(){ return name; }
 	inline void setName(const string &nm){ name = nm; }
 	
-	inline string getIP(){ return connection->remote_endpoint_address; }
+	inline string getIP(){ return connection->remote_endpoint_address(); }
 
 	inline uint getID(){ return uid; }
 	inline void setID(int id){ uid = id; }

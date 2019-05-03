@@ -20,7 +20,7 @@ using namespace std;
 
 class Server {
 public:
-	using SendStream = WSServerBase::SendStream;
+	using OutMessage = WSServerBase::OutMessage;
 private:
 	static const int connectTimeout = 5*60;
 	static const int pingTimeout = 3*60;
