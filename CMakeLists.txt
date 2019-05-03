@@ -40,7 +40,11 @@ set(SOURCE_FILES
 		commands/command_ban.hpp
 		commands/command_userlist.hpp
 		commands/command_roomlist.hpp
-		commands/command_ipcounter.hpp commands/command_help.hpp logger.hpp gate.hpp)
+		commands/command_ipcounter.hpp
+		commands/command_help.hpp
+		logger.hpp
+		gate.hpp
+		utils.hpp)
 
 find_package(Boost COMPONENTS system regex REQUIRED)
 find_library(MYSQLCPPCONN mysqlcppconn)

@@ -25,25 +25,14 @@ private:
 	uint uid;
 	bool _isGirl;
 	string color;
+	string clientIP;
 public:
 	time_t lastPacketTime;
 	time_t lastMessageTime;
 	int messageCounter;
 
-	Client(Server *srv, shared_ptr<WSServerBase::Connection> conn){
-		server = srv;
-		connection = conn;
-		uid = 0;
-		lastMessageTime = time(nullptr);
-		lastPacketTime = lastMessageTime;
-		messageCounter = 0;
-		_isGirl = false;
-		color = "gray";
-	}
-	
-	~Client(){
-	
-	}
+	Client(Server *srv, shared_ptr<WSServerBase::Connection> conn);
+	~Client();
 	
 	void setSelfPtr(weak_ptr<Client> wptr){ self = wptr; }
 	ClientPtr getSelfPtr(){ return self.lock(); }
@@ -57,7 +46,7 @@ public:
 	inline string getName(){ return name; }
 	inline void setName(const string &nm){ name = nm; }
 	
-	inline string getIP(){ return connection->remote_endpoint_address(); }
+	inline string getIP(){ return clientIP; }
 
 	inline uint getID(){ return uid; }
 	inline void setID(int id){ uid = id; }

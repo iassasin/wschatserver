@@ -4,6 +4,23 @@
 #include "packet.hpp"
 #include "packets.hpp"
 #include "logger.hpp"
+#include "utils.hpp"
+
+Client::Client(Server *srv, shared_ptr<WSServerBase::Connection> conn) {
+	server = srv;
+	connection = conn;
+	uid = 0;
+	lastMessageTime = time(nullptr);
+	lastPacketTime = lastMessageTime;
+	messageCounter = 0;
+	_isGirl = false;
+	color = "gray";
+	clientIP = getRealClientIp(conn);
+}
+
+Client::~Client() {
+
+}
 
 void Client::onPacket(string msg){
 	unique_ptr<Packet> pack(Packet::read(msg));

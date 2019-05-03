@@ -8,6 +8,7 @@
 #include "server.hpp"
 #include "packets.hpp"
 #include "logger.hpp"
+#include "utils.hpp"
 
 Server::Server(int port)
 	: server(config["ssl"]["certificate"].asString(), config["ssl"]["private_key"].asString())
@@ -31,12 +32,6 @@ Server::Server(int port)
 	};
 	
 	chat.on_open = [&, this](auto connection) {
-		auto iphdr = connection->header.find("X-Real-IP");
-		if (iphdr != connection->header.end()){
-			// TODO: to Client class
-			// connection->remote_endpoint_address = iphdr->second;
-		}
-
 		ClientPtr cli = make_shared<Client>(this, connection);
 		cli->setSelfPtr(cli);
 
@@ -53,7 +48,7 @@ Server::Server(int port)
 	};
 	
 	chat.on_close = [&](auto connection, int status, const string& reason) {
-		auto ip = connection->remote_endpoint_address();
+		auto ip = getRealClientIp(connection);
 	    Logger::info("Closed connection from ", ip, " with status code ", status);
 
 		auto &cnt = connectionsCountFromIp[ip];
@@ -70,7 +65,7 @@ Server::Server(int port)
 	};
 	
 	chat.on_error = [&](auto connection, const boost::system::error_code& ec) {
-		auto ip = connection->remote_endpoint_address();
+		auto ip = getRealClientIp(connection);
 		Logger::warn("Error in connection from ", ip,
 				". Error: ", ec, ", error message: ", ec.message());
 
