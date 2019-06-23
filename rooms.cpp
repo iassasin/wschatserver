@@ -1,5 +1,6 @@
 #include "rooms.hpp"
 #include "packets.hpp"
+#include "config.hpp"
 #include <ctime>
 
 MemberInfo::MemberInfo(){
@@ -176,7 +177,7 @@ void Room::addToHistory(const Packet &pack){
 	if (pack.type == Packet::Type::message && ((const PacketMessage &) pack).to_id == 0){
 		Json::FastWriter wr;
 		history.push_back(wr.write(pack.serialize()));
-		if (history.size() > 50){
+		while (!history.empty() && history.size() > config["maxHistory"].asInt()){
 			history.pop_front();
 		}
 	}

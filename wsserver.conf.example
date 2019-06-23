@@ -1,5 +1,6 @@
 {
 	"port": 8080,
+	"maxHistory": 100,
 
 	"ssl": {
 		"certificate": "cert/fullchain.pem",
