@@ -13,13 +13,19 @@ class CommandNick : public Command {
 public:
 	virtual void process(MemberPtr member, regex_parser &parser) override {
 		static regex r_login("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$");
+		static regex r_startSpaces("^\\s+");
+		static regex r_endSpaces("\\s+$");
+		static regex r_longSpaces("\\s{2,}");
 
 		auto room = member->getRoom();
 		PacketSystem syspack;
 		syspack.target = room->getName();
 
 		string nick = parser.suffix();
-		nick = regex_replace(regex_replace(nick, regex("^\\s+"), ""), regex("\\s+$"), "");
+
+		nick = regex_replace(nick, r_endSpaces, "");
+		nick = regex_replace(nick, r_startSpaces, "");
+		nick = regex_replace(nick, r_longSpaces, "");
 
 		if (nick.empty() || regex_match(nick, r_login)){ //TODO: regex to config?
 			if (!nick.empty() && room->findMemberByNick(nick)){
