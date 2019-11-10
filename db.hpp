@@ -25,6 +25,9 @@ class SafeStatement {
 private:
 	Database *db;
 	unique_ptr<T> pst;
+
+	template<typename F, typename R>
+	R retryWithReconnect(int count, R def, F f);
 public:
 	SafeStatement(SafeStatement<T> &) = delete;
 	SafeStatement(const SafeStatement<T> &) = delete;
@@ -61,7 +64,6 @@ public:
 class Database {
 private:
 	static unique_ptr<sql::Connection> conn;
-	static time_t lastReconnectionTime;
 	
 	void init(){
 		execute("set names utf8");
@@ -78,7 +80,7 @@ private:
 	}
 public:
 	Database(){
-		if (!conn || conn->isClosed() || time(nullptr) - lastReconnectionTime >= 60*60*12){
+		if (!conn || conn->isClosed()){
 			reconnect();
 		}
 	}
@@ -87,12 +89,19 @@ public:
 		sql::mysql::MySQL_Driver driver;
 		auto dbconf = config["database"];
 
-		if (conn){
-			conn->close();
+		if (!conn) {
+			sql::ConnectOptionsMap connection_properties;
+
+			connection_properties["hostName"] = dbconf["host"].asString();
+			connection_properties["userName"] = dbconf["user"].asString();
+			connection_properties["password"] = dbconf["password"].asString();
+			connection_properties["OPT_RECONNECT"] = true;
+
+			conn.reset(driver.connect(connection_properties));
+		} else {
+			conn->reconnect();
 		}
 
-		conn = unique_ptr<sql::Connection>(driver.connect(dbconf["host"].asString(), dbconf["user"].asString(), dbconf["password"].asString()));
-		lastReconnectionTime = time(nullptr);
 		init();
 	}
 	
@@ -106,15 +115,17 @@ public:
 
 };
 
-template <typename T>
-bool SafeStatement<T>::execute(){
-	if (pst){
-		int tries = 3;
-		while (tries--){
+template<typename T>
+template<typename F, typename R>
+R SafeStatement<T>::retryWithReconnect(int count, R def, F f) {
+	if (pst) {
+		int tries = 0;
+		while (true) {
 			try {
-				return pst->execute();
-			} catch (sql::SQLException &e){
-				if (tries < 0){
+				++tries;
+				return f();
+			} catch (sql::SQLException &e) {
+				if (tries >= count) {
 					throw;
 				}
 
@@ -123,47 +134,29 @@ bool SafeStatement<T>::execute(){
 			}
 		}
 	}
-	return false;
+
+	return def;
 }
 
 template <typename T>
-unique_ptr<sql::ResultSet> SafeStatement<T>::executeQuery(){
-	if (pst){
-		int tries = 3;
-		while (tries--){
-			try {
-				return as_unique(pst->executeQuery());
-			} catch (sql::SQLException &e){
-				if (tries <= 0){
-					throw;
-				}
+bool SafeStatement<T>::execute() {
+	return retryWithReconnect(3, false, [this] {
+		return pst->execute();
+	});
+}
 
-				Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
-				db->reconnect();
-			}
-		}
-	}
-	return nullptr;
+template <typename T>
+unique_ptr<sql::ResultSet> SafeStatement<T>::executeQuery() {
+	return retryWithReconnect(3, unique_ptr<sql::ResultSet>(), [this] {
+		return as_unique(pst->executeQuery());
+	});
 }
 
 template <typename T>
 int SafeStatement<T>::executeUpdate(){
-	if (pst){
-		int tries = 3;
-		while (tries--){
-			try {
-				return pst->executeUpdate();
-			} catch (sql::SQLException &e){
-				if (tries < 0){
-					throw;
-				}
-
-				Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
-				db->reconnect();
-			}
-		}
-	}
-	return 0;
+	return retryWithReconnect(3, 0, [this] {
+		return pst->executeUpdate();
+	});
 }
 
 #endif
