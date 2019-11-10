@@ -25,16 +25,26 @@ private:
 	Redis(const Redis &) = delete;
 
 	static bool isConnectionValid(){
+		using namespace std::string_literals;
+
 		if (!redisInstance.isConnected()){
 			return false;
 		}
 
-		auto cmd = redisInstance.command("PING", {});
-		return cmd.isOk() && cmd.toString() == "PONG";
+		try {
+			auto cmd = redisInstance.command("PING", {});
+			return cmd.isOk() && cmd.toString() == "PONG";
+		} catch (std::exception &e) {
+			Logger::error("Error in redis check connection: "s + e.what());
+		}
+
+		return false;
 	}
 public:
 	Redis(){
 		if (!isConnectionValid()){
+			redisInstance.disconnect();
+
 			boost::asio::ip::tcp::resolver resolver(io);
 			boost::asio::ip::tcp::resolver::query query(
 					config["redis"]["host"].asCString(),
@@ -42,6 +52,8 @@ public:
 			);
 			auto ep = resolver.resolve(query)->endpoint();
 			redisInstance.connect(ep);
+
+			Logger::info("Connected to redis");
 		}
 	}
 
