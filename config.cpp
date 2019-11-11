@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-Config config("wsserver.conf");
+Config config("wsserver.conf.json");
 
 void Config::loadFromFile(std::string file, Json::Value &val){
 	Json::Reader rd;
