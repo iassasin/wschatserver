@@ -64,11 +64,6 @@ public:
 class Database {
 private:
 	static unique_ptr<sql::Connection> conn;
-	
-	void init(){
-		execute("set names utf8");
-		execute("use www");
-	}
 
 	bool execute(const string &sql){
 		return statement()->execute(sql);
@@ -95,14 +90,14 @@ public:
 			connection_properties["hostName"] = dbconf["host"].asString();
 			connection_properties["userName"] = dbconf["user"].asString();
 			connection_properties["password"] = dbconf["password"].asString();
+			connection_properties["schema"] = dbconf["db"].asString();
+			connection_properties["OPT_CHARSET_NAME"] = dbconf["charset"].asString();
 			connection_properties["OPT_RECONNECT"] = true;
 
 			conn.reset(driver.connect(connection_properties));
 		} else {
 			conn->reconnect();
 		}
-
-		init();
 	}
 	
 	SafeStatement<sql::Statement> statement(){

@@ -355,7 +355,7 @@ void PacketAuth::process(Client &client){
 			}
 		}
 	} catch (SQLException &e){
-		Logger::error("SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+		Logger::error("[auth] SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
 		db.reconnect();
 		client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
 		return;
