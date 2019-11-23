@@ -141,6 +141,7 @@ public:
 	string data;
 	bool is_owner;
 	bool is_moder;
+	time_t last_seen_time;
 	
 	PacketStatus();
 	PacketStatus(MemberPtr member, Member::Status stat, const string &data = "");

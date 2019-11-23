@@ -15,6 +15,7 @@ using RoomPtr = std::shared_ptr<Room>;
 #include <unordered_set>
 #include <map>
 #include <list>
+#include <ctime>
 #include <jsoncpp/json/json.h>
 
 #include "server.hpp"
@@ -65,6 +66,7 @@ private:
 	Status status;
 	bool girl;
 	string color;
+	time_t lastSeenTime;
 public:
 	Member(weak_ptr<Room> rm, ClientPtr cli){
 		id = 0; client = cli;
@@ -72,6 +74,7 @@ public:
 		status = Status::bad;
 		girl = false;
 		color = "gray";
+		lastSeenTime = time(nullptr);
 	}
 
 	inline ClientPtr getClient(){ return client; }
@@ -93,13 +96,20 @@ public:
 	void setNick(const string &nnick);
 
 	Status getStatus(){ return status; }
-	void setStatus(Status stat){ status = stat; }
+	void setStatus(Status stat){
+		if (stat != status && status == Status::away) {
+			lastSeenTime = time(nullptr);
+		}
+		status = stat;
+	}
 
 	bool isAdmin();
 	bool isOwner();
 	bool isModer();
 
 	void sendPacket(const Packet &pack);
+
+	time_t getLastSeenTime() { return lastSeenTime; }
 };
 
 class Room {

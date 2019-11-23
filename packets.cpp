@@ -376,6 +376,7 @@ PacketStatus::PacketStatus(){
 	user_id = 0;
 	is_owner = false;
 	is_moder = false;
+	last_seen_time = 0;
 }
 
 PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &dt)
@@ -392,6 +393,7 @@ PacketStatus::PacketStatus(MemberPtr member, Member::Status stat, const string &
 	data = dt;
 	is_owner = is_moder = member->isOwner();
 	if (!is_moder) is_moder = member->isModer();
+	last_seen_time = member->getLastSeenTime();
 }
 
 PacketStatus::PacketStatus(MemberPtr member, const string &dt)
@@ -422,6 +424,7 @@ Json::Value PacketStatus::serialize() const {
 	obj["data"] = data;
 	obj["is_owner"] = is_owner;
 	obj["is_moder"] = is_moder;
+	obj["last_seen_time"] = (Json::UInt64) last_seen_time;
 	return obj;
 }
 
