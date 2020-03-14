@@ -27,7 +27,7 @@ set(SOURCE_FILES
 		client.cpp
 		server.cpp
 		wsserver.cpp
-		server_wss_ex.hpp
+		server_ws_ex.hpp
 		commands/command.hpp
 		commands/commands.hpp
 		commands/command_nick.hpp

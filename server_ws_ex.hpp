@@ -8,11 +8,9 @@
 #include "algo.hpp"
 #include "logger.hpp"
 
-class WebSocketServerEx : public SimpleWeb::SocketServer<SimpleWeb::WSS> {
+class WebSocketServerEx : public SimpleWeb::SocketServer<SimpleWeb::WS> {
 public:
-	WebSocketServerEx(const std::string& cert_file, const std::string& private_key_file) :
-			SimpleWeb::SocketServer<SimpleWeb::WSS>(cert_file, private_key_file)
-	{
+	WebSocketServerEx() : SimpleWeb::SocketServer<SimpleWeb::WS>() {
 		io_service = std::make_shared<boost::asio::io_service>();
 		internal_io_service = true;
 	}

@@ -10,8 +10,7 @@
 #include "logger.hpp"
 #include "utils.hpp"
 
-Server::Server(int port)
-	: server(config["ssl"]["certificate"].asString(), config["ssl"]["private_key"].asString())
+Server::Server(int port) : server()
 {
 	server.config.port = (unsigned short) port;
 	server.config.thread_pool_size = 1;

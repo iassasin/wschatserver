@@ -2,10 +2,10 @@
 #define SERVER_H_
 
 #include <jsoncpp/json/json.h>
-#include "server_wss_ex.hpp"
+#include "server_ws_ex.hpp"
 
 class Server;
-using WSServerBase = SimpleWeb::SocketServerBase<SimpleWeb::WSS>;
+using WSServerBase = SimpleWeb::SocketServerBase<SimpleWeb::WS>;
 using WSServer = WebSocketServerEx;
 
 #include <unordered_set>
