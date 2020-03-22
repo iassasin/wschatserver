@@ -13,6 +13,9 @@ APP = $(APP_NAME)
 all: $(APP)
 	strip $(APP)
 
+static: $(APP)-static
+	strip $(APP)
+
 static_boost: LDLIBS = -lpthread -Wl,-Bstatic -lboost_system -Wl,-Bdynamic -lcrypto -lmysqlcppconn -ljsoncpp -lssl
 static_boost: $(APP)
 	strip $(APP)
@@ -23,6 +26,10 @@ debug: $(OBJECTS)
 
 clean:
 	rm -f $(APP) $(OBJECTS)
+
+$(APP)-static: LDLIBS = -lpthread -lboost_system -lcrypto -ljsoncpp -lssl -lmysqlcppconn $(shell pkg-config --libs --static mysqlclient)
+$(APP)-static: $(OBJECTS)
+	$(LINK.o) -flto -static $^ $(LDLIBS) -o $(APP)
 
 $(APP): $(OBJECTS)
 	$(LINK.o) -flto $^ $(LDLIBS) -o $(APP)

@@ -1,0 +1,13 @@
+.idea
+*.o
+wsserver.conf.json
+rooms.dat
+wsserver
+
+.cproject
+.project
+.settings/
+Debug/
+Release/
+*_test/
+cmake-build-*/
