@@ -30,14 +30,14 @@ private:
 	template<typename ...Args>
 	static void logErr(const Args &...args){
 		std::ostream *s = &std::cerr;
-//		*s << date("[%Y-%m-%d %H:%M:%S] ");
+		*s << date("[%Y-%m-%d %H:%M:%S] ");
 		doLog(*s, args...);
 	}
 public:
 	template<typename ...Args>
 	static void log(const Args &...args){
 		std::ostream *s = &std::cout;
-//		*s << date("[%Y-%m-%d %H:%M:%S] ");
+		*s << date("[%Y-%m-%d %H:%M:%S] ");
 		doLog(*s, args...);
 	}
 
