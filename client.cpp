@@ -16,6 +16,10 @@ Client::Client(Server *srv, shared_ptr<WSServerBase::Connection> conn) {
 	_isGirl = false;
 	color = "gray";
 	clientIP = getRealClientIp(conn);
+
+	if (auto cookie = conn->header.find("Cookie"); cookie != conn->header.end()) {
+		cookies = SimpleWeb::HttpHeader::FieldValue::SemicolonSeparatedAttributes::parse(cookie->second);
+	}
 }
 
 Client::~Client() {

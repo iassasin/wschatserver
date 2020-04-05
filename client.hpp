@@ -26,6 +26,7 @@ private:
 	bool _isGirl;
 	string color;
 	string clientIP;
+	SimpleWeb::CaseInsensitiveMultimap cookies;
 public:
 	time_t lastPacketTime;
 	time_t lastMessageTime;
@@ -47,6 +48,7 @@ public:
 	inline void setName(const string &nm){ name = nm; }
 	
 	inline string getIP(){ return clientIP; }
+	inline const SimpleWeb::CaseInsensitiveMultimap &getCookies() { return cookies; }
 
 	inline uint getID(){ return uid; }
 	inline void setID(int id){ uid = id; }

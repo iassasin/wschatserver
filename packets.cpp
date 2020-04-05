@@ -293,8 +293,10 @@ Json::Value PacketAuth::serialize() const {
 void PacketAuth::process(Client &client){
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
+	auto connection = client.getConnection();
 	Database db;
 	Gate gate;
+	Redis redis;
 	try {
 		int uid = 0;
 
@@ -306,9 +308,7 @@ void PacketAuth::process(Client &client){
 		};
 
 		if (!ukey.empty()){
-			Redis cache;
-
-			cache.get("chat-key-" + ukey, uid);
+			redis.get("chat-key-" + ukey, uid);
 		}
 		else if (!api_key.empty()){
 			if (!gate.auth(client.getIP())){
@@ -323,6 +323,18 @@ void PacketAuth::process(Client &client){
 			if (rs->next()){
 				uid = rs->getInt(1);
 				gate.auth(client.getIP(), true);
+			}
+		}
+		else if (!name.empty() && !password.empty()) {
+			// placeholder
+		}
+		// http-header authentication
+		else if (auto sinidIt = client.getCookies().find("sinid"); sinidIt != client.getCookies().end()) {
+			Json::Value session;
+			if (redis.getJson("session:" + sinidIt->second, session)) {
+				if (session.isMember("user_id")) {
+					uid = std::stoi(session["user_id"].asString());
+				}
 			}
 		}
 
