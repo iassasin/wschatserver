@@ -294,83 +294,88 @@ void PacketAuth::process(Client &client){
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
 	auto connection = client.getConnection();
-	Database db;
-	Gate gate;
-	Redis redis;
 	try {
-		int uid = 0;
+		Database db;
+		Gate gate;
+		Redis redis;
 
-		auto initUser = [&](int uid, int gid, const string &name){
-			client.setID(uid);
-			client.setName(name);
-			client.setGirl(gid == 4);
-			client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
-		};
+		try {
+			int uid = 0;
 
-		if (!ukey.empty()){
-			redis.get("chat-key-" + ukey, uid);
-		}
-		else if (!api_key.empty()){
-			if (!gate.auth(client.getIP())){
-				client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
-				return;
+			auto initUser = [&](int uid, int gid, const string &name){
+				client.setID(uid);
+				client.setName(name);
+				client.setGirl(gid == 4);
+				client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
+			};
+
+			if (!ukey.empty()){
+				redis.get("chat-key-" + ukey, uid);
 			}
+			else if (!api_key.empty()){
+				if (!gate.auth(client.getIP())){
+					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
+					return;
+				}
 
-			auto ps = db.prepare("SELECT user_id FROM api_keys WHERE `key` = ?");
-			ps->setString(1, api_key);
+				auto ps = db.prepare("SELECT user_id FROM api_keys WHERE `key` = ?");
+				ps->setString(1, api_key);
 
-			auto rs = ps.executeQuery();
-			if (rs->next()){
-				uid = rs->getInt(1);
-				gate.auth(client.getIP(), true);
-			}
-		}
-		else if (!name.empty() && !password.empty()) {
-			// placeholder
-		}
-		// http-header authentication
-		else if (auto sinidIt = client.getCookies().find("sinid"); sinidIt != client.getCookies().end()) {
-			Json::Value session;
-			if (redis.getJson("session:" + sinidIt->second, session)) {
-				if (session.isMember("user_id")) {
-					uid = std::stoi(session["user_id"].asString());
+				auto rs = ps.executeQuery();
+				if (rs->next()){
+					uid = rs->getInt(1);
+					gate.auth(client.getIP(), true);
 				}
 			}
-		}
-
-		if (uid != 0){
-			auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
-			ps->setInt(1, uid);
-
-			auto rs = ps.executeQuery();
-			if (rs->next()){
-				initUser(uid, rs->getInt(2), rs->getString(1));
+			else if (!name.empty() && !password.empty()) {
+				// placeholder
 			}
-		}
-		else if (!name.empty() && !password.empty()){
-			if (!gate.auth(client.getIP())){
-				client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
-				return;
+			// http-header authentication
+			else if (auto sinidIt = client.getCookies().find("sinid"); sinidIt != client.getCookies().end()) {
+				Json::Value session;
+				if (redis.getJson("session:" + sinidIt->second, session)) {
+					if (session.isMember("user_id")) {
+						uid = std::stoi(session["user_id"].asString());
+					}
+				}
 			}
 
-			auto ps = db.prepare("SELECT id, login, gid FROM users WHERE login = ? AND pass = MD5(?)");
-			ps->setString(1, name);
-			ps->setString(2, password);
+			if (uid != 0){
+				auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
+				ps->setInt(1, uid);
 
-			auto rs = ps.executeQuery();
-			if (rs->next()){
-				initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
-				gate.auth(client.getIP(), true);
-			} else {
-				client.sendPacket(PacketError(type, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
-				return;
+				auto rs = ps.executeQuery();
+				if (rs->next()){
+					initUser(uid, rs->getInt(2), rs->getString(1));
+				}
 			}
+			else if (!name.empty() && !password.empty()){
+				if (!gate.auth(client.getIP())){
+					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
+					return;
+				}
+
+				auto ps = db.prepare("SELECT id, login, gid FROM users WHERE login = ? AND pass = MD5(?)");
+				ps->setString(1, name);
+				ps->setString(2, password);
+
+				auto rs = ps.executeQuery();
+				if (rs->next()){
+					initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
+					gate.auth(client.getIP(), true);
+				} else {
+					client.sendPacket(PacketError(type, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
+					return;
+				}
+			}
+		} catch (SQLException &e){
+			Logger::error("[auth] SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+			db.reconnect();
+			client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
+			return;
 		}
-	} catch (SQLException &e){
-		Logger::error("[auth] SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
-		db.reconnect();
-		client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
-		return;
+	} catch (const std::exception &e) {
+		Logger::error("[auth] Exception: ", e.what());
 	}
 
 	user_id = client.getID();
