@@ -27,9 +27,11 @@ debug: $(OBJECTS)
 clean:
 	rm -f $(APP) $(OBJECTS)
 
+# Disable -flto for static build, because mysql exceptions cause sigsegv in core lib
 $(APP)-static: LDLIBS = -lpthread -lboost_system -lcrypto -ljsoncpp -lssl -lmysqlcppconn $(shell pkg-config --libs --static mysqlclient)
+$(APP)-static: CPPFLAGS = -Wall -O3 -std=c++17 $(INCLUDES)
 $(APP)-static: $(OBJECTS)
-	$(LINK.o) -flto -static $^ $(LDLIBS) -o $(APP)
+	$(LINK.o) -static $^ $(LDLIBS) -o $(APP)
 
 $(APP): $(OBJECTS)
 	$(LINK.o) -flto $^ $(LDLIBS) -o $(APP)
