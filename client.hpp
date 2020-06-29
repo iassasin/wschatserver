@@ -1,16 +1,10 @@
 #ifndef CLIENT_H_
 #define CLIENT_H_
 
-#include <memory>
-#include <set>
-
-class Client;
-
-using ClientPtr = std::shared_ptr<Client>;
-
+#include "client_fwd.hpp"
 #include "packet.hpp"
 #include "server.hpp"
-#include "rooms.hpp"
+#include "rooms_fwd.hpp"
 
 using namespace std;
 

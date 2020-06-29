@@ -11,10 +11,10 @@ using WSServer = WebSocketServerEx;
 #include <unordered_set>
 #include <unordered_map>
 
-#include "client.hpp"
+#include "client_fwd.hpp"
 #include "packet.hpp"
 #include "redis.hpp"
-#include "rooms.hpp"
+#include "rooms_fwd.hpp"
 
 using namespace std;
 

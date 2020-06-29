@@ -11,7 +11,6 @@
 
 #include "../rooms.hpp"
 #include "../regex/regex.hpp"
-#include "../packets.hpp"
 
 class Command {
 public:

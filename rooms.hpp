@@ -1,13 +1,7 @@
 #ifndef ROOMS_H_
 #define ROOMS_H_
 
-#include <memory>
-
-class Member;
-class Room;
-
-using MemberPtr = std::shared_ptr<Member>;
-using RoomPtr = std::shared_ptr<Room>;
+#include "rooms_fwd.hpp"
 
 #include <vector>
 #include <string>
