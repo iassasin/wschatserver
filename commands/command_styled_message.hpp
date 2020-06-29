@@ -23,6 +23,7 @@ public:
 			member->sendPacket(PacketSystem(room->getName(), "Вы забыли написать текст сообщения :("));
 		} else {
 			PacketMessage pmsg(member, smsg);
+			pmsg.id = std::to_string(room->newMessageId());
 			pmsg.style = style;
 			room->sendPacketToAll(pmsg);
 		}

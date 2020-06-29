@@ -73,6 +73,7 @@ public:
 private:
 	bool processCommand(MemberPtr member, RoomPtr room, const string &msg);
 public:
+	string id;
 	time_t msgtime;
 	string target;
 	string message;

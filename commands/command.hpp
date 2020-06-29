@@ -9,7 +9,7 @@
 #include <vector>
 #include <initializer_list>
 
-#include "../rooms.hpp"
+#include "../rooms_fwd.hpp"
 #include "../regex/regex.hpp"
 
 class Command {

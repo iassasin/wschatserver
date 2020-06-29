@@ -78,6 +78,7 @@ Room::Room(Server *srv){
 	server = srv;
 	ownerId = -1;
 	nextMemberId = 0;
+	nextMessageId = 0;
 }
 
 Room::~Room(){
@@ -108,6 +109,7 @@ Json::Value Room::serialize(){
 	Json::Value val;
 	val["owner_id"] = ownerId;
 	val["name"] = name;
+	val["nextMessageId"] = nextMessageId;
 
 	val["history"] = Json::Value(Json::arrayValue);
 	auto &hist = val["history"];
@@ -132,6 +134,7 @@ Json::Value Room::serialize(){
 void Room::deserialize(const Json::Value &val){
 	ownerId = val["owner_id"].asUInt();
 	name = val["name"].asString();
+	nextMessageId = val["nextMessageId"].asUInt();
 
 	history.clear();
 	for (auto &v : val["history"]){

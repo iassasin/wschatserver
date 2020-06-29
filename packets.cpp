@@ -1,7 +1,6 @@
 #include "packets.hpp"
 #include "client.hpp"
 #include "algo.hpp"
-#include "server.hpp"
 #include "regex/regex.hpp"
 #include "commands/commands.hpp"
 #include "logger.hpp"
@@ -10,7 +9,6 @@
 
 #include <cstdlib>
 #include <memory>
-#include <sstream>
 
 using namespace sql;
 using namespace sinlib;
@@ -98,6 +96,7 @@ void PacketMessage::deserialize(const Json::Value &obj){
 
 Json::Value PacketMessage::serialize() const {
 	Json::Value obj;
+	obj["id"] = id;
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	obj["time"] = (Json::UInt64) msgtime;
@@ -131,21 +130,25 @@ void PacketMessage::process(Client &client){
 		++client.messageCounter;
 
 		auto room = client.getRoomByName(target);
-
 		if (!room){
 			client.sendPacket(PacketSystem("", string("Вы не можете писать в комнату \"") + target + "\""));
 			return;
 		}
 
 		auto member = room->findMemberByClient(client.getSelfPtr());
-		if (!processCommand(member, room, message)){
-			string nick = member->getNick();
-			if (nick.empty()){
-				client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
-			} else {
-				room->sendPacketToAll(PacketMessage(member, message));
-			}
+		if (processCommand(member, room, message)) {
+			return;
 		}
+
+		string nick = member->getNick();
+		if (nick.empty()) {
+			client.sendPacket(PacketSystem(target, "Перед началом общения укажите свой ник: /nick MyNick"));
+			return;
+		}
+
+		PacketMessage msgPack(member, message);
+		msgPack.id = std::to_string(room->newMessageId());
+		room->sendPacketToAll(msgPack);
 	}
 }
 

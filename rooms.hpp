@@ -111,6 +111,7 @@ private:
 	Server *server;
 	string name;
 	uint ownerId;
+	uint nextMessageId;
 	weak_ptr<Room> self;
 
 	unordered_set<MemberPtr> members;
@@ -167,6 +168,8 @@ public:
 	inline bool addModerator(uint uid){ return moderators.insert(uid).second; }
 	inline bool removeModerator(uint uid){ return moderators.erase(uid) > 0; }
 	inline bool isModerator(uint uid){ return moderators.find(uid) != moderators.end(); }
+
+	auto newMessageId() { return nextMessageId++; }
 
 	MemberPtr addMember(ClientPtr user);
 	bool removeMember(ClientPtr user);
