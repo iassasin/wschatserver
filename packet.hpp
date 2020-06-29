@@ -4,11 +4,7 @@
 #include <string>
 #include <jsoncpp/json/json.h>
 
-using std::string;
-
-#ifndef CLIENT_CLASS_DEFINED
-class Client;
-#endif
+#include "client_fwd.hpp"
 
 class Packet {
 private:
@@ -33,7 +29,7 @@ public:
 	Packet();
 	virtual ~Packet();
 	
-	static Packet *read(const string &data);
+	static Packet *read(const std::string &data);
 	
 	virtual void deserialize(const Json::Value &) = 0;
 	virtual Json::Value serialize() const = 0;

@@ -44,7 +44,9 @@ set(SOURCE_FILES
 		commands/command_help.hpp
 		logger.hpp
 		gate.hpp
-		utils.hpp)
+		utils.hpp
+		rooms_fwd.hpp
+		client_fwd.hpp)
 
 find_package(Boost COMPONENTS system regex REQUIRED)
 find_library(MYSQLCPPCONN mysqlcppconn)

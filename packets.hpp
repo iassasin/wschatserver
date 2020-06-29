@@ -21,6 +21,7 @@ public:
 		invalid_target,
 		already_exists,
 		incorrect_loginpass,
+		user_banned,
 	};
 public:
 	Type source;

@@ -225,11 +225,15 @@ MemberPtr Room::addMember(ClientPtr user){
 
 	if (!m->isModer()){
 		if (bannedIps.find(user->getIP()) != bannedIps.end()){
-			user->sendPacket(PacketSystem("", "Вы были забанены"));
+			user->sendPacket(PacketError(Packet::Type::join, name, PacketError::Code::user_banned, "Вы были забанены"));
 			return nullptr;
 		}
 		else if (bannedUids.find(user->getID()) != bannedUids.end()){
-			user->sendPacket(PacketSystem("", user->getID() == 0 ? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте" : "Вы были забанены"));
+			PacketError error(Packet::Type::join, name, PacketError::Code::user_banned,
+					user->getID() == 0 ? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте"
+						: "Вы были забанены"
+			);
+			user->sendPacket(error);
 			return nullptr;
 		}
 	}
