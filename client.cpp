@@ -27,7 +27,7 @@ Client::~Client() {
 }
 
 void Client::onPacket(string msg){
-	unique_ptr<Packet> pack(Packet::read(msg));
+	auto pack = Packet::read(msg);
 	if (pack){
 		lastPacketTime = time(nullptr);
 		pack->process(*this);

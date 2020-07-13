@@ -2,6 +2,7 @@
 #define PACKET_H_
 
 #include <string>
+#include <memory>
 #include <jsoncpp/json/json.h>
 
 #include "client_fwd.hpp"
@@ -29,7 +30,7 @@ public:
 	Packet();
 	virtual ~Packet();
 	
-	static Packet *read(const std::string &data);
+	static std::unique_ptr<Packet> read(const std::string &data);
 	
 	virtual void deserialize(const Json::Value &) = 0;
 	virtual Json::Value serialize() const = 0;
