@@ -15,14 +15,14 @@ public:
 		internal_io_service = true;
 	}
 
-	void runWithTimeout(int msec, std::function<void()> func){
+	void runWithTimeout(int msec, std::function<void()> func) {
 		using namespace boost;
 		using namespace boost::asio;
 
 		auto timer = std::make_shared<deadline_timer>(*io_service);
 		std::function<void(const system::error_code& ec)> f;
-		f = [func, timer](const system::error_code& ec){
-			if(!ec){
+		f = [func, timer](const system::error_code& ec) {
+			if(!ec) {
 				func();
 			}
 			else {
@@ -34,14 +34,14 @@ public:
 		timer->async_wait(f);
 	}
 
-	void runWithInterval(int msec, std::function<void()> func){
+	void runWithInterval(int msec, std::function<void()> func) {
 		using namespace boost;
 		using namespace boost::asio;
 
 		auto timer = std::make_shared<deadline_timer>(*io_service);
 		auto f = std::make_shared<std::function<void(const system::error_code& ec)>>();
-		*f = [=](const system::error_code& ec){
-			if(!ec){
+		*f = [=](const system::error_code& ec) {
+			if(!ec) {
 				func();
 				timer->expires_from_now(posix_time::millisec(msec));
 				timer->async_wait(*f);

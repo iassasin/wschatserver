@@ -20,12 +20,12 @@ Server::Server(int port) : server()
 	chat.on_message = [&](auto connection, auto message) {
 		string msg = message->string();
 		try {
-			if (clients.find(connection) != clients.end()){
+			if (clients.find(connection) != clients.end()) {
 				clients[connection]->onPacket(msg);
 			}
-		} catch (const exception &e){
+		} catch (const exception &e) {
 			Logger::error("Exception: ", e.what(), "\nWhile processing message:", msg);
-		} catch (...){
+		} catch (...) {
 			Logger::error("Unknown error while processing message:", msg);
 		}
 	};
@@ -37,7 +37,7 @@ Server::Server(int port) : server()
 		Logger::info("Opened connection from ", cli->getIP());
 
 		auto &cnt = connectionsCountFromIp[cli->getIP()];
-		if (cnt >= 5){ //TODO: to config
+		if (cnt >= 5) { //TODO: to config
 			Logger::info("Connections limit reached for ", cli->getIP());
 			connection->send_close(0);
 		}
@@ -53,11 +53,11 @@ Server::Server(int port) : server()
 		auto &cnt = connectionsCountFromIp[ip];
 		--cnt;
 
-		if (cnt <= 0){
+		if (cnt <= 0) {
 			connectionsCountFromIp.erase(ip);
 		}
 
-	    if (clients.find(connection) != clients.end()){
+	    if (clients.find(connection) != clients.end()) {
 			clients[connection]->onDisconnect();
 			clients.erase(connection);
 	    }
@@ -71,11 +71,11 @@ Server::Server(int port) : server()
 		auto &cnt = connectionsCountFromIp[ip];
 		--cnt;
 
-		if (cnt <= 0){
+		if (cnt <= 0) {
 			connectionsCountFromIp.erase(ip);
 		}
 
-		if (clients.find(connection) != clients.end()){
+		if (clients.find(connection) != clients.end()) {
 			clients[connection]->onDisconnect();
 			clients.erase(connection);
 		}
@@ -85,49 +85,49 @@ Server::Server(int port) : server()
 		time_t cur = time(nullptr);
 		vector<ClientPtr> toKick;
 
-		for (auto c : clients){
+		for (auto c : clients) {
 			auto &cli = c.second;
 
-			if (cur - cli->lastPacketTime > connectTimeout){
+			if (cur - cli->lastPacketTime > connectTimeout) {
 				toKick.push_back(cli);
 			}
-			else if (cur - cli->lastPacketTime > pingTimeout){
+			else if (cur - cli->lastPacketTime > pingTimeout) {
 				//cout << date("[%H:%M:%S] ") << "Server: Sending ping to " << cli->getName() << " [" << cli->getIP() << "]" << endl;
 				cli->sendPacket(PacketPing());
 			}
 		}
 
-		for (auto cli : toKick){
+		for (auto cli : toKick) {
 			kick(cli);
 			Logger::info("Kicked by no ping: ", cli->getName(), " [", cli->getIP(), "]");
 		}
 	});
 }
 
-void Server::start(){
+void Server::start() {
 	Logger::info("Started wsserver at port ", server.config.port);
 	connectionsCountFromIp.clear();
 	server.start();
 }
 
-void Server::stop(){
+void Server::stop() {
 	server.stop();
 }
 
-Json::Value Server::serialize(){
+Json::Value Server::serialize() {
 	Json::Value val;
 
 	auto &sr = val["rooms"];
-	for (RoomPtr r : rooms){
+	for (RoomPtr r : rooms) {
 		sr.append(r->serialize());
 	}
 
 	return val;
 }
 
-void Server::deserialize(const Json::Value &val){
+void Server::deserialize(const Json::Value &val) {
 	rooms.clear();
-	for (auto &v : val["rooms"]){
+	for (auto &v : val["rooms"]) {
 		RoomPtr rm = make_shared<Room>(this);
 		rm->setSelfPtr(rm);
 		rm->deserialize(v);
@@ -135,28 +135,28 @@ void Server::deserialize(const Json::Value &val){
 	}
 }
 
-void Server::sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata){
+void Server::sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata) {
 	conn->send(rdata);
 }
 
-void Server::sendPacket(shared_ptr<WSServerBase::Connection> conn, const Packet &pack){
+void Server::sendPacket(shared_ptr<WSServerBase::Connection> conn, const Packet &pack) {
 	Json::FastWriter wr;
 	conn->send(wr.write(pack.serialize()));
 }
 
-void Server::sendPacketToAll(const Packet &pack){
+void Server::sendPacketToAll(const Packet &pack) {
 	Json::FastWriter wr;
 	auto response_ss = make_shared<OutMessage>();
 	*response_ss << wr.write(pack.serialize());
 
-	for (auto conn : server.get_connections()){
+	for (auto conn : server.get_connections()) {
 		//TODO: maybe response_ss->seekg(0);
 		conn->send(response_ss);
 	}
 }
 
-ClientPtr Server::getClientByName(string name){
-	for (auto clip : clients){
+ClientPtr Server::getClientByName(string name) {
+	for (auto clip : clients) {
 		auto cli = clip.second;
 		if (!cli->getName().empty() && cli->getName() == name)
 			return cli; 
@@ -164,8 +164,8 @@ ClientPtr Server::getClientByName(string name){
 	return ClientPtr();
 }
 
-ClientPtr Server::getClientByID(uint uid){
-	for (auto clip : clients){
+ClientPtr Server::getClientByID(uint uid) {
+	for (auto clip : clients) {
 		auto cli = clip.second;
 		if (cli->getID() > 0 && cli->getID() == uid)
 			return cli; 
@@ -173,9 +173,9 @@ ClientPtr Server::getClientByID(uint uid){
 	return ClientPtr();
 }
 
-vector<ClientPtr> Server::getClients(){
+vector<ClientPtr> Server::getClients() {
 	vector<ClientPtr> res;
-	for (auto clip : clients){
+	for (auto clip : clients) {
 		auto &cli = clip.second;
 		res.push_back(cli);
 	}
@@ -183,14 +183,14 @@ vector<ClientPtr> Server::getClients(){
 	return res;
 }
 
-void Server::kick(ClientPtr client){
+void Server::kick(ClientPtr client) {
 	auto conn = client->getConnection();
 	clients.erase(conn);
 	client->onDisconnect();
 	conn->send_close(0);
 }
 
-RoomPtr Server::createRoom(string name){
+RoomPtr Server::createRoom(string name) {
 	auto rm = getRoomByName(name);
 	if (rm)
 		return nullptr;
@@ -204,11 +204,11 @@ RoomPtr Server::createRoom(string name){
 	return rm;
 }
 
-bool Server::removeRoom(string name){
+bool Server::removeRoom(string name) {
 	auto rm = getRoomByName(name);
-	if (rm){
+	if (rm) {
 		bool res = rooms.erase(rm) > 0;
-		if (res){
+		if (res) {
 			rm->onDestroy();
 		}
 		return res;
@@ -217,9 +217,9 @@ bool Server::removeRoom(string name){
 	return false;
 }
 
-RoomPtr Server::getRoomByName(string name){
-	for (RoomPtr room : rooms){
-		if (room->getName() == name){
+RoomPtr Server::getRoomByName(string name) {
+	for (RoomPtr room : rooms) {
+		if (room->getName() == name) {
 			return room;
 		}
 	}

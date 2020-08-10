@@ -15,7 +15,7 @@ public:
 		auto server = member->getClient()->getServer();
 
 		string res = "Подключения:\n";
-		for (auto c : server->getConnectionsCounter()){
+		for (auto c : server->getConnectionsCounter()) {
 			res += c.first + " - " + to_string(c.second) + "\n";
 		}
 

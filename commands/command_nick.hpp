@@ -27,8 +27,8 @@ public:
 		nick = regex_replace(nick, r_startSpaces, "");
 		nick = regex_replace(nick, r_longSpaces, " ");
 
-		if (nick.empty() || regex_match(nick, r_login)){ //TODO: regex to config?
-			if (!nick.empty() && room->findMemberByNick(nick)){
+		if (nick.empty() || regex_match(nick, r_login)) { //TODO: regex to config?
+			if (!nick.empty() && room->findMemberByNick(nick)) {
 				syspack.message = "Такой ник уже занят";
 				member->sendPacket(syspack);
 			} else {

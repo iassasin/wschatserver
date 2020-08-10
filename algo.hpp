@@ -23,7 +23,7 @@ string date(const string &format);
 bool startsWith(const string &str, const string &needle);
 
 template<typename T>
-unique_ptr<T> as_unique(T *v){
+unique_ptr<T> as_unique(T *v) {
 	return unique_ptr<T>(v);
 }
 

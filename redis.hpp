@@ -24,10 +24,10 @@ private:
 	
 	Redis(const Redis &) = delete;
 
-	static bool isConnectionValid(){
+	static bool isConnectionValid() {
 		using namespace std::string_literals;
 
-		if (!redisInstance.isConnected()){
+		if (!redisInstance.isConnected()) {
 			return false;
 		}
 
@@ -41,8 +41,8 @@ private:
 		return false;
 	}
 public:
-	Redis(){
-		if (!isConnectionValid()){
+	Redis() {
+		if (!isConnectionValid()) {
 			redisInstance.disconnect();
 
 			boost::asio::ip::tcp::resolver resolver(io);
@@ -58,13 +58,13 @@ public:
 	}
 
 	template<typename T>
-	bool get(const std::string &key, T &val){
+	bool get(const std::string &key, T &val) {
 		auto cmd = redisInstance.command("GET", {key});
 
-		if (cmd.isNull()){
+		if (cmd.isNull()) {
 
 		}
-		else if (cmd.isOk()){
+		else if (cmd.isOk()) {
 			string reply = cmd.toString();
 			istringstream ss(reply);
 			ss >> val;
@@ -74,9 +74,9 @@ public:
 		return false;
 	}
 
-	bool getJson(const std::string &key, Json::Value &val){
+	bool getJson(const std::string &key, Json::Value &val) {
 		string s;
-		if (!get(key, s)){
+		if (!get(key, s)) {
 			return false;
 		}
 
@@ -85,23 +85,23 @@ public:
 	}
 	
 	template<typename T>
-	bool set(const std::string &key, const T &value, time_t expiration = 0){
-		if (expiration > 0){
+	bool set(const std::string &key, const T &value, time_t expiration = 0) {
+		if (expiration > 0) {
 			return redisInstance.command("SETEX", {std::to_string(expiration), std::to_string(value)}).isOk();
 		} else {
 			return redisInstance.command("SET", {key, std::to_string(value)}).isOk();
 		}
 	}
 
-	bool set(const std::string &key, const string &value, time_t expiration = 0){
-		if (expiration > 0){
+	bool set(const std::string &key, const string &value, time_t expiration = 0) {
+		if (expiration > 0) {
 			return redisInstance.command("SETEX", {std::to_string(expiration), value}).isOk();
 		} else {
 			return redisInstance.command("SET", {key, value}).isOk();
 		}
 	}
 
-	bool setJson(const std::string &key, const Json::Value &value, time_t expiration = 0){
+	bool setJson(const std::string &key, const Json::Value &value, time_t expiration = 0) {
 		Json::FastWriter writer;
 		return set(key, writer.write(value), expiration);
 	}

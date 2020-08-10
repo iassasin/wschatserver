@@ -17,21 +17,21 @@ public:
 		auto &nlist = room->getBannedNicks();
 
 		res += "Забаненные ники (" + to_string(nlist.size()) + "):\n";
-		for (auto s : nlist){
+		for (auto s : nlist) {
 			res += s;
 			res += "\n";
 		}
 
 		auto &ulist = room->getBannedUids();
 		res += "Забаненные аккаунты (" + to_string(ulist.size()) + "):\n";
-		for (auto s : ulist){
+		for (auto s : ulist) {
 			res += to_string(s);
 			res += "\n";
 		}
 
 		auto &ilist = room->getBannedIps();
 		res += "Забаненные IP (" + to_string(ilist.size()) + "):\n";
-		for (auto s : ilist){
+		for (auto s : ilist) {
 			res += s;
 			res += "\n";
 		}
@@ -54,18 +54,18 @@ public:
 		const auto &list = room->getBannedNicks();
 		string nick = parser.suffix();
 
-		if (!member->isAdmin() && list.size() > 100){ //TODO: constant to config
+		if (!member->isAdmin() && list.size() > 100) { //TODO: constant to config
 			syspack.message = "Превышен лимит на количество запрещенных ников";
 			member->sendPacket(syspack);
 		}
-		else if (nick.size() > 24 || nick.empty()){ //TODO: use regex from /nick
+		else if (nick.size() > 24 || nick.empty()) { //TODO: use regex from /nick
 			syspack.message = "Некорректный ник";
 			member->sendPacket(syspack);
 		}
 		else {
-			if (room->banNick(nick)){
+			if (room->banNick(nick)) {
 				auto m = room->findMemberByNick(nick);
-				if (m){
+				if (m) {
 					room->kickMember(m);
 				}
 				syspack.message = "Ник запрещен";
@@ -91,15 +91,15 @@ public:
 		syspack.target = room->getName();
 
 		auto &list = room->getBannedUids();
-		if (!member->isAdmin() && list.size() > 100){ //TODO: constant to config
+		if (!member->isAdmin() && list.size() > 100) { //TODO: constant to config
 			syspack.message = "Превышен лимит на количество забаненных аккаунтов";
 			member->sendPacket(syspack);
 		}
-		else if (parser.next(r_int)){
+		else if (parser.next(r_int)) {
 			uint uid;
 			parser.read(0, uid);
 
-			if (room->banUid(uid)){
+			if (room->banUid(uid)) {
 				syspack.message = "Аккаунт забанен";
 			} else {
 				syspack.message = "Аккаунт уже в списке забаненных";
@@ -127,15 +127,15 @@ public:
 		syspack.target = room->getName();
 
 		auto &list = room->getBannedIps();
-		if (!member->isAdmin() && list.size() > 100){ //TODO: constant to config
+		if (!member->isAdmin() && list.size() > 100) { //TODO: constant to config
 			syspack.message = "Превышен лимит на количество забаненных IP";
 			member->sendPacket(syspack);
 		}
-		else if (parser.next(r_ip)){
+		else if (parser.next(r_ip)) {
 			string ip;
 			parser.read(0, ip);
 
-			if (room->banIp(ip)){
+			if (room->banIp(ip)) {
 				syspack.message = "IP забанен";
 			} else {
 				syspack.message = "IP уже в списке забаненных";
@@ -162,12 +162,12 @@ public:
 
 		string nick = parser.suffix();
 
-		if (nick.size() > 24 || nick.empty()){ //TODO: use regex from /nick
+		if (nick.size() > 24 || nick.empty()) { //TODO: use regex from /nick
 			syspack.message = "Некорректный ник";
 			member->sendPacket(syspack);
 		}
 		else {
-			if (room->unbanNick(nick)){
+			if (room->unbanNick(nick)) {
 				syspack.message = "Разбанен";
 			} else {
 				syspack.message = "Ник не был забанен";
@@ -190,11 +190,11 @@ public:
 		PacketSystem syspack;
 		syspack.target = room->getName();
 
-		if (parser.next(r_int)){
+		if (parser.next(r_int)) {
 			uint uid;
 			parser.read(0, uid);
 
-			if (room->unbanUid(uid)){
+			if (room->unbanUid(uid)) {
 				syspack.message = "Аккаунт разбанен";
 			} else {
 				syspack.message = "Аккаунт не был забанен";
@@ -221,11 +221,11 @@ public:
 		PacketSystem syspack;
 		syspack.target = room->getName();
 
-		if (parser.next(r_ip)){
+		if (parser.next(r_ip)) {
 			string ip;
 			parser.read(0, ip);
 
-			if (room->unbanIp(ip)){
+			if (room->unbanIp(ip)) {
 				syspack.message = "IP разбанен";
 			} else {
 				syspack.message = "IP не был забанен";

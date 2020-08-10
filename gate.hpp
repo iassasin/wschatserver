@@ -14,18 +14,18 @@ class Gate {
 protected:
 	Redis md;
 
-	bool _tries(const std::string &name, const std::string &key, int tries, int timeout){
+	bool _tries(const std::string &name, const std::string &key, int tries, int timeout) {
 		Json::Value val;
 
 		string mdkey = "gate-" + name + "-" + key;
 		int cnt;
 
-		if (!md.get(mdkey, cnt)){
+		if (!md.get(mdkey, cnt)) {
 			cnt = 0;
 		}
 
 		++cnt;
-		if (cnt > tries){
+		if (cnt > tries) {
 			return false;
 		}
 		md.set(mdkey, cnt, timeout);
@@ -33,16 +33,16 @@ protected:
 		return true;
 	}
 
-	void _resetTries(const std::string &name, const std::string &key){
+	void _resetTries(const std::string &name, const std::string &key) {
 		string mdkey = "gate-" + name + "-" + key;
 		int cnt = 0;
-		if (md.get(mdkey, cnt) && cnt > 0){
+		if (md.get(mdkey, cnt) && cnt > 0) {
 			md.set(mdkey, 0, 1);
 		}
 	}
 public:
-	bool auth(const string &ip, bool reset = false){
-		if (reset){
+	bool auth(const string &ip, bool reset = false) {
+		if (reset) {
 			_resetTries("auth", ip);
 			return true;
 		}

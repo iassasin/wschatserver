@@ -26,9 +26,9 @@ Client::~Client() {
 
 }
 
-void Client::onPacket(string msg){
+void Client::onPacket(string msg) {
 	auto pack = Packet::read(msg);
-	if (pack){
+	if (pack) {
 		lastPacketTime = time(nullptr);
 		pack->process(*this);
 	} else {
@@ -36,32 +36,32 @@ void Client::onPacket(string msg){
 	}
 }
 
-void Client::onDisconnect(){
+void Client::onDisconnect() {
 	auto ptr = self.lock();
-	for (RoomPtr room : rooms){
+	for (RoomPtr room : rooms) {
 		auto member = room->findMemberByClient(ptr);
 		room->removeMember(ptr);
 	}
 	rooms.clear();
 }
 
-void Client::onKick(RoomPtr room){
+void Client::onKick(RoomPtr room) {
 	rooms.erase(room);
 }
 
-void Client::sendPacket(const Packet &pack){
+void Client::sendPacket(const Packet &pack) {
 	server->sendPacket(connection, pack);
 }
 
-void Client::sendRawData(const string &data){
+void Client::sendRawData(const string &data) {
 	server->sendRawData(connection, data);
 }
 
-MemberPtr Client::joinRoom(RoomPtr room){
+MemberPtr Client::joinRoom(RoomPtr room) {
 	auto ptr = self.lock();
 	auto member = room->addMember(ptr);
 
-	if (member){
+	if (member) {
 		rooms.insert(room);
 		member->setStatus(Member::Status::online);
 	}
@@ -69,15 +69,15 @@ MemberPtr Client::joinRoom(RoomPtr room){
 	return member;
 }
 
-void Client::leaveRoom(RoomPtr room){
-	if (rooms.erase(room) > 0){
+void Client::leaveRoom(RoomPtr room) {
+	if (rooms.erase(room) > 0) {
 		room->removeMember(self.lock());
 	}
 }
 
-RoomPtr Client::getRoomByName(const string &name){
-	for (RoomPtr room : rooms){
-		if (room->getName() == name){
+RoomPtr Client::getRoomByName(const string &name) {
+	for (RoomPtr room : rooms) {
+		if (room->getName() == name) {
 			return room;
 		}
 	}

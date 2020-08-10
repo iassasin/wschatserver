@@ -16,9 +16,9 @@ private:
 	string help_owner;
 	string help_admin;
 
-	string createHelpForCommands(CommandProcessor &cmdp){
+	string createHelpForCommands(CommandProcessor &cmdp) {
 		string res;
-		for (auto cmd : cmdp.getCommands()){
+		for (auto cmd : cmdp.getCommands()) {
 			res += "/" + cmd->getName() + " " + cmd->getArgumentsTemplate() + "\n"
 					+ "\t" + cmd->getDescription() + "\n";
 		}
@@ -26,7 +26,7 @@ private:
 		return res;
 	}
 
-	void generateHelp(){
+	void generateHelp() {
 		help_all = createHelpForCommands(PacketMessage::cmd_all);
 		help_user = createHelpForCommands(PacketMessage::cmd_user);
 		help_moder = createHelpForCommands(PacketMessage::cmd_moder);
@@ -35,7 +35,7 @@ private:
 	}
 public:
 	virtual void process(MemberPtr member, regex_parser &parser) override {
-		if (help_all.empty()){
+		if (help_all.empty()) {
 			generateHelp();
 		}
 
@@ -43,15 +43,15 @@ public:
 
 		string message = "\nДоступные команды:\n" + help_all + help_user;
 
-		if (member->isOwner()){
+		if (member->isOwner()) {
 			message += "\nВладелец комнаты:\n" + help_owner;
 		}
 
-		if (member->isModer()){
+		if (member->isModer()) {
 			message += "\nМодератор комнаты:\n" + help_moder;
 		}
 
-		if (member->isAdmin()){
+		if (member->isAdmin()) {
 			message += "\nАдмин:\n" + help_admin;
 		}
 

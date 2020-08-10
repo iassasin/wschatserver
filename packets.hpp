@@ -31,9 +31,9 @@ public:
 
 	PacketError() { type = Type::error; }
 	PacketError(Type src, const string &targ, Code cod, const string &inf = "")
-			: source(src), target(targ), code(cod), info(inf){ type = Type::error; }
-	PacketError(Type src, Code cod, const string &inf = "") : PacketError(src, "", cod, inf){}
-	PacketError(Code cod, const string &inf = "") : PacketError(Type::error, cod, inf){}
+			: source(src), target(targ), code(cod), info(inf) { type = Type::error; }
+	PacketError(Type src, Code cod, const string &inf = "") : PacketError(src, "", cod, inf) {}
+	PacketError(Code cod, const string &inf = "") : PacketError(Type::error, cod, inf) {}
 
 	Json::Value serialize() const override;
 	void process(Client &) override;
@@ -82,8 +82,8 @@ public:
 	Style style;
 
 	PacketMessage();
-	PacketMessage(MemberPtr member, const string &msg) : PacketMessage(member, msg, time(nullptr)){}
-	PacketMessage(MemberPtr from, MemberPtr to, const string &msg) : PacketMessage(from, to, msg, time(nullptr)){}
+	PacketMessage(MemberPtr member, const string &msg) : PacketMessage(member, msg, time(nullptr)) {}
+	PacketMessage(MemberPtr from, MemberPtr to, const string &msg) : PacketMessage(from, to, msg, time(nullptr)) {}
 	PacketMessage(MemberPtr member, const string &msg, const time_t &tm);
 	PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm);
 	virtual ~PacketMessage();

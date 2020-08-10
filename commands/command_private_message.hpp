@@ -18,21 +18,21 @@ public:
 
 		string part;
 
-		if (parser.next(r_to_space)){
+		if (parser.next(r_to_space)) {
 			parser.read(0, part);
 		}
 
 		string smsg;
-		if (parser.next(r_spaces)){
+		if (parser.next(r_spaces)) {
 			smsg = parser.suffix();
 		}
 
-		if (regex_match(smsg, regex("\\s*"))){
+		if (regex_match(smsg, regex("\\s*"))) {
 			member->sendPacket(PacketSystem(room->getName(), "Вы забыли написать текст сообщения :("));
 		} else {
 			MemberPtr m2 = room->findMemberByNick(part);
 
-			if (!m2){
+			if (!m2) {
 				member->sendPacket(PacketSystem(room->getName(), "Указанный пользователь не найден"));
 			} else {
 				PacketMessage pmsg(member, m2, smsg);
@@ -58,22 +58,22 @@ public:
 
 		uint mid = 0;
 
-		if (parser.next(r_int)){
+		if (parser.next(r_int)) {
 			parser.read(0, mid);
 		}
 		parser.next(r_to_space);
 
 		string smsg;
-		if (parser.next(r_spaces)){
+		if (parser.next(r_spaces)) {
 			smsg = parser.suffix();
 		}
 
-		if (regex_match(smsg, regex("\\s*"))){
+		if (regex_match(smsg, regex("\\s*"))) {
 			member->sendPacket(PacketSystem(room->getName(), "Вы забыли написать текст сообщения :("));
 		} else {
 			MemberPtr m2 = room->findMemberById(mid);
 
-			if (!m2 || m2->getNick().empty()){
+			if (!m2 || m2->getNick().empty()) {
 				member->sendPacket(PacketSystem(room->getName(), "Указанный пользователь не найден"));
 			} else {
 				PacketMessage pmsg(member, m2, smsg);

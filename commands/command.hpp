@@ -14,7 +14,7 @@
 
 class Command {
 public:
-	virtual ~Command(){}
+	virtual ~Command() {}
 
 	virtual void process(MemberPtr member, regex_parser &cmdstr) = 0;
 	virtual std::string getName() = 0;
@@ -29,18 +29,18 @@ private:
 	CommandMap commands;
 	std::vector<Command *> ordered_commands;
 public:
-	CommandProcessor(std::initializer_list<Command *> l){
-		for (auto cmd : l){
-			if (cmd){
+	CommandProcessor(std::initializer_list<Command *> l) {
+		for (auto cmd : l) {
+			if (cmd) {
 				commands[cmd->getName()].reset(cmd);
 				ordered_commands.push_back(cmd);
 			}
 		}
 	}
 
-	bool process(std::string cmd, MemberPtr member, regex_parser &parser){
+	bool process(std::string cmd, MemberPtr member, regex_parser &parser) {
 		auto el = commands.find(cmd);
-		if (el != commands.end()){
+		if (el != commands.end()) {
 			el->second->process(member, parser);
 			return true;
 		}
@@ -48,7 +48,7 @@ public:
 		return false;
 	}
 
-	const std::vector<Command *> &getCommands(){ return ordered_commands; }
+	const std::vector<Command *> &getCommands() { return ordered_commands; }
 };
 
 #endif //BUILD_COMMAND_HPP

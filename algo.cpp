@@ -4,7 +4,7 @@
 
 using namespace std;
 
-string date(const string &format){
+string date(const string &format) {
 	time_t rawtime;
 	struct tm *timeinfo;
 	char buffer[format.size()*2];
@@ -17,15 +17,15 @@ string date(const string &format){
 	return buffer;
 }
 
-bool startsWith(const string &str, const string &needle){
+bool startsWith(const string &str, const string &needle) {
 	return string(str, 0, needle.size()) == needle;
 }
 
-void replaceInvalidUtf8(string &str, char replacement){
+void replaceInvalidUtf8(string &str, char replacement) {
 	auto start = begin(str);
 	auto send = end(str);
 
-	while (start != send){
+	while (start != send) {
 		start = utf8::find_invalid(start, send);
 		if (start != send)
 			*start++ = replacement;

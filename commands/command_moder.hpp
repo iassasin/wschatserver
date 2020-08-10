@@ -19,17 +19,17 @@ public:
 		syspack.target = room->getName();
 
 		auto &mods = room->getModerators();
-		if (!client->isAdmin() && mods.size() > 10){ //TODO: constant to config
+		if (!client->isAdmin() && mods.size() > 10) { //TODO: constant to config
 			syspack.message = "Превышен лимит на количество модераторов";
 			member->sendPacket(syspack);
 		}
-		else if (parser.next(r_int)){
+		else if (parser.next(r_int)) {
 			uint uid;
 			parser.read(0, uid);
 
-			if (uid == 0){
+			if (uid == 0) {
 				syspack.message = "Гостя нельзя назначить модератором";
-			} else if (room->addModerator(uid)){
+			} else if (room->addModerator(uid)) {
 				syspack.message = "Модератор добавлен";
 			} else {
 				syspack.message = "Пользователь уже в списке модераторов";
@@ -56,11 +56,11 @@ public:
 		PacketSystem syspack;
 		syspack.target = room->getName();
 
-		if (parser.next(r_int)){
+		if (parser.next(r_int)) {
 			uint uid;
 			parser.read(0, uid);
 
-			if (room->removeModerator(uid)){
+			if (room->removeModerator(uid)) {
 				syspack.message = "Модератор убран";
 			} else {
 				syspack.message = "Пользователь не является модератором";
@@ -85,7 +85,7 @@ public:
 
 		auto &mods = room->getModerators();
 		string res = "Модераторы:";
-		for (auto mod : mods){
+		for (auto mod : mods) {
 			res += "\n";
 			res += to_string(mod);
 		}

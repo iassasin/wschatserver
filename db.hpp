@@ -32,17 +32,17 @@ public:
 	SafeStatement(SafeStatement<T> &) = delete;
 	SafeStatement(const SafeStatement<T> &) = delete;
 
-	explicit SafeStatement(Database &fdb, T *st){
+	explicit SafeStatement(Database &fdb, T *st) {
 		pst.reset(st);
 		db = &fdb;
 	}
 
-	SafeStatement(SafeStatement &&ss){
+	SafeStatement(SafeStatement &&ss) {
 		pst.swap(ss.pst);
 		db = ss.db;
 	}
 
-	SafeStatement<T> &operator = (SafeStatement<T> &&ss){
+	SafeStatement<T> &operator = (SafeStatement<T> &&ss) {
 		pst.swap(ss.pst);
 		db = ss.db;
 		return *this;
@@ -52,11 +52,11 @@ public:
 	unique_ptr<sql::ResultSet> executeQuery();
 	int executeUpdate();
 
-	T *operator -> (){
+	T *operator -> () {
 		return pst.get();
 	}
 
-	T &operator * (){
+	T &operator * () {
 		return *pst;
 	}
 };
@@ -65,22 +65,22 @@ class Database {
 private:
 	static unique_ptr<sql::Connection> conn;
 
-	bool execute(const string &sql){
+	bool execute(const string &sql) {
 		return statement()->execute(sql);
 	}
 
-	unique_ptr<sql::ResultSet> query(const string &sql){
+	unique_ptr<sql::ResultSet> query(const string &sql) {
 		return unique_ptr<sql::ResultSet>(statement()->executeQuery(sql));
 		//TODO: обертка, чтобы сохранять statement()
 	}
 public:
-	Database(){
-		if (!conn || conn->isClosed()){
+	Database() {
+		if (!conn || conn->isClosed()) {
 			reconnect();
 		}
 	}
 	
-	void reconnect(){
+	void reconnect() {
 		sql::mysql::MySQL_Driver driver;
 		auto dbconf = config["database"];
 
@@ -100,11 +100,11 @@ public:
 		}
 	}
 	
-	SafeStatement<sql::Statement> statement(){
+	SafeStatement<sql::Statement> statement() {
 		return SafeStatement<sql::Statement>(*this, conn->createStatement());
 	}
 	
-	SafeStatement<sql::PreparedStatement> prepare(const string &sql){
+	SafeStatement<sql::PreparedStatement> prepare(const string &sql) {
 		return SafeStatement<sql::PreparedStatement>(*this, conn->prepareStatement(sql));
 	}
 
@@ -148,7 +148,7 @@ unique_ptr<sql::ResultSet> SafeStatement<T>::executeQuery() {
 }
 
 template <typename T>
-int SafeStatement<T>::executeUpdate(){
+int SafeStatement<T>::executeUpdate() {
 	return retryWithReconnect(3, 0, [this] {
 		return pst->executeUpdate();
 	});

@@ -16,20 +16,20 @@ public:
 		auto room = member->getRoom();
 
 		string g;
-		if (parser.next(r_to_space)){
+		if (parser.next(r_to_space)) {
 			parser.read(0, g);
-			if (!(g[0] == 'f' || g[0] == 'm')){
+			if (!(g[0] == 'f' || g[0] == 'm')) {
 				g = "";
 			}
 		}
 
-		if (g.empty()){
+		if (g.empty()) {
 			member->setGirl(!member->isGirl());
 		} else {
 			member->setGirl(g[0] == 'f');
 		}
 
-		if (member->hasNick()){
+		if (member->hasNick()) {
 			room->sendPacketToAll(PacketStatus(member, Member::Status::gender_change));
 		} else {
 			member->sendPacket(PacketStatus(member, Member::Status::gender_change));

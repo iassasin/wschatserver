@@ -33,7 +33,7 @@ private:
 	unordered_set<RoomPtr> rooms;
 public:
 	Server(int port);
-	~Server(){ stop(); }
+	~Server() { stop(); }
 	
 	void start();
 	void stop();
@@ -50,13 +50,13 @@ public:
 	ClientPtr getClientByID(uint uid);
 	
 	vector<ClientPtr> getClients();
-	inline const unordered_set<RoomPtr> &getRooms(){ return rooms; }
+	inline const unordered_set<RoomPtr> &getRooms() { return rooms; }
 
 	RoomPtr createRoom(string name);
 	bool removeRoom(string name);
 	RoomPtr getRoomByName(string name);
 
-	inline const unordered_map<string, uint> &getConnectionsCounter(){ return connectionsCountFromIp; }
+	inline const unordered_map<string, uint> &getConnectionsCounter() { return connectionsCountFromIp; }
 };
 
 #endif

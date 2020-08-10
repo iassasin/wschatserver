@@ -15,7 +15,7 @@ public:
 		auto server = member->getClient()->getServer();
 
 		string rooms = "Комнаты:\n";
-		for (auto r : server->getRooms()){
+		for (auto r : server->getRooms()) {
 			rooms += to_string(r->getOwner()) + ": " + r->getName() + "\n";
 		}
 

@@ -3,24 +3,24 @@
 #include "packet.hpp"
 #include "packets.hpp"
 
-Packet::Packet(){
+Packet::Packet() {
 	type = Type::error;
 }
 
-Packet::~Packet(){
+Packet::~Packet() {
 	
 }
 
-std::unique_ptr<Packet> Packet::read(const std::string &data){
+std::unique_ptr<Packet> Packet::read(const std::string &data) {
 	Json::Value obj;
 	Json::Reader jreader;
 
-	if (!jreader.parse(data, obj)){
+	if (!jreader.parse(data, obj)) {
 		return nullptr;
 	}
 	
 	std::unique_ptr<Packet> pack;
-	switch ((Type) obj["type"].asInt()){
+	switch ((Type) obj["type"].asInt()) {
 		case Type::error:				pack.reset(new PacketError()); break;
 		case Type::system:				pack.reset(new PacketSystem()); break;
 		case Type::message:				pack.reset(new PacketMessage()); break;
@@ -34,7 +34,7 @@ std::unique_ptr<Packet> Packet::read(const std::string &data){
 		case Type::ping:				pack.reset(new PacketPing()); break;
 	}
 
-	if (pack){
+	if (pack) {
 		try {
 			pack->deserialize(obj);
 		} catch (std::out_of_range &e) {

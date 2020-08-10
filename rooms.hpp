@@ -62,7 +62,7 @@ private:
 	string color;
 	time_t lastSeenTime;
 public:
-	Member(weak_ptr<Room> rm, ClientPtr cli){
+	Member(weak_ptr<Room> rm, ClientPtr cli) {
 		id = 0; client = cli;
 		room = rm;
 		status = Status::bad;
@@ -71,26 +71,26 @@ public:
 		lastSeenTime = time(nullptr);
 	}
 
-	inline ClientPtr getClient(){ return client; }
-	inline uint getId(){ return id; }
+	inline ClientPtr getClient() { return client; }
+	inline uint getId() { return id; }
 
-	inline bool hasNick(){ return !nick.empty(); }
+	inline bool hasNick() { return !nick.empty(); }
 
-	inline bool isGirl(){ return girl; }
-	inline void setGirl(bool g){ girl = g; }
+	inline bool isGirl() { return girl; }
+	inline void setGirl(bool g) { girl = g; }
 
-	inline string getColor(){ return color; }
-	inline void setColor(string clr){ color = clr; }
+	inline string getColor() { return color; }
+	inline void setColor(string clr) { color = clr; }
 
-	RoomPtr getRoom(){ return room.lock(); }
-	MemberPtr getSelfPtr(){ return self.lock(); }
-	void setSelfPtr(weak_ptr<Member> wptr){ self = wptr; }
+	RoomPtr getRoom() { return room.lock(); }
+	MemberPtr getSelfPtr() { return self.lock(); }
+	void setSelfPtr(weak_ptr<Member> wptr) { self = wptr; }
 
-	inline string getNick(){ return nick; }
+	inline string getNick() { return nick; }
 	void setNick(const string &nnick);
 
-	Status getStatus(){ return status; }
-	void setStatus(Status stat){
+	Status getStatus() { return status; }
+	void setStatus(Status stat) {
 		if (stat != status && status == Status::away) {
 			lastSeenTime = time(nullptr);
 		}
@@ -132,15 +132,15 @@ public:
 	Room(Server *srv);
 	~Room();
 
-	void setSelfPtr(weak_ptr<Room> ptr){ self = ptr; }
+	void setSelfPtr(weak_ptr<Room> ptr) { self = ptr; }
 
 	void setOwner(uint nid);
-	inline uint getOwner(){ return ownerId; }
+	inline uint getOwner() { return ownerId; }
 
-	string getName(){ return name; }
-	void setName(string nm){ name = nm; }
+	string getName() { return name; }
+	void setName(string nm) { name = nm; }
 
-	const list<string> &getHistory(){ return history; }
+	const list<string> &getHistory() { return history; }
 
 	void onCreate();
 	void onDestroy();
@@ -148,26 +148,26 @@ public:
 	Json::Value serialize();
 	void deserialize(const Json::Value &);
 
-	inline const unordered_set<MemberPtr> &getMembers(){ return members; }
-	inline const unordered_set<uint> &getModerators(){ return moderators; }
+	inline const unordered_set<MemberPtr> &getMembers() { return members; }
+	inline const unordered_set<uint> &getModerators() { return moderators; }
 
-	inline const unordered_set<string> &getBannedNicks(){ return bannedNicks; }
-	inline const unordered_set<string> &getBannedIps(){ return bannedIps; }
-	inline const unordered_set<uint> &getBannedUids(){ return bannedUids; }
+	inline const unordered_set<string> &getBannedNicks() { return bannedNicks; }
+	inline const unordered_set<string> &getBannedIps() { return bannedIps; }
+	inline const unordered_set<uint> &getBannedUids() { return bannedUids; }
 
-	inline bool isBannedNick(const string &nick){ return bannedNicks.find(nick) != bannedNicks.end(); }
+	inline bool isBannedNick(const string &nick) { return bannedNicks.find(nick) != bannedNicks.end(); }
 
-	inline bool banNick(const string &nick){ return bannedNicks.insert(nick).second; }
-	inline bool banIp(const string &ip){ return bannedIps.insert(ip).second; }
-	inline bool banUid(uint uid){ return bannedUids.insert(uid).second; }
+	inline bool banNick(const string &nick) { return bannedNicks.insert(nick).second; }
+	inline bool banIp(const string &ip) { return bannedIps.insert(ip).second; }
+	inline bool banUid(uint uid) { return bannedUids.insert(uid).second; }
 
-	inline bool unbanNick(const string &nick){ return bannedNicks.erase(nick) > 0; }
-	inline bool unbanIp(const string &ip){ return bannedIps.erase(ip) > 0; }
-	inline bool unbanUid(uint uid){ return bannedUids.erase(uid) > 0; }
+	inline bool unbanNick(const string &nick) { return bannedNicks.erase(nick) > 0; }
+	inline bool unbanIp(const string &ip) { return bannedIps.erase(ip) > 0; }
+	inline bool unbanUid(uint uid) { return bannedUids.erase(uid) > 0; }
 
-	inline bool addModerator(uint uid){ return moderators.insert(uid).second; }
-	inline bool removeModerator(uint uid){ return moderators.erase(uid) > 0; }
-	inline bool isModerator(uint uid){ return moderators.find(uid) != moderators.end(); }
+	inline bool addModerator(uint uid) { return moderators.insert(uid).second; }
+	inline bool removeModerator(uint uid) { return moderators.erase(uid) > 0; }
+	inline bool isModerator(uint uid) { return moderators.find(uid) != moderators.end(); }
 
 	auto newMessageId() { return nextMessageId++; }
 

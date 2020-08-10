@@ -15,7 +15,7 @@ public:
 
 		string users = "Пользователи:\n";
 
-		for (auto m : room->getMembers()){
+		for (auto m : room->getMembers()) {
 			auto mc = m->getClient();
 			users += "#" + to_string(m->getId()) + " " + m->getNick() + " (uid " + to_string(mc->getID()) + ", " + mc->getIP() + ")\n";
 		}

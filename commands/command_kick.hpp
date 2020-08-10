@@ -16,7 +16,7 @@ public:
 		string nick = parser.suffix();
 
 		auto m = room->findMemberByNick(nick);
-		if (m){
+		if (m) {
 			room->kickMember(m);
 		} else {
 			member->sendPacket(PacketSystem(room->getName(), "Такой пользователь не найден"));

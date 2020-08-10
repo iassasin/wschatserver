@@ -28,13 +28,13 @@ Json::Value PacketError::serialize() const {
 	return obj;
 }
 
-void PacketError::process(Client &client){
+void PacketError::process(Client &client) {
 
 }
 
 //----
 
-PacketSystem::PacketSystem(){ type = Type::system; }
+PacketSystem::PacketSystem() { type = Type::system; }
 PacketSystem::PacketSystem(const string &targ, const string &msg, std::optional<uint32_t> seqId)
 		: target(targ), message(msg)
 {
@@ -42,7 +42,7 @@ PacketSystem::PacketSystem(const string &targ, const string &msg, std::optional<
 	sequenceId = seqId;
 }
 
-PacketSystem::~PacketSystem(){}
+PacketSystem::~PacketSystem() {}
 
 Json::Value PacketSystem::serialize() const {
 	auto obj = Packet::serialize();
@@ -52,11 +52,11 @@ Json::Value PacketSystem::serialize() const {
 	return obj;
 }
 
-void PacketSystem::process(Client &client){}
+void PacketSystem::process(Client &client) {}
 
 //----
 
-PacketMessage::PacketMessage(){
+PacketMessage::PacketMessage() {
 	type = Type::message;
 	msgtime = 0;
 	from_id = 0;
@@ -64,7 +64,7 @@ PacketMessage::PacketMessage(){
 	style = Style::message;
 }
 
-PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &tm) : PacketMessage(){
+PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &tm) : PacketMessage() {
 	target = member->getRoom()->getName();
 	from_login = member->getNick();
 	from_id = member->getId();
@@ -74,15 +74,15 @@ PacketMessage::PacketMessage(MemberPtr member, const string &msg, const time_t &
 	msgtime = tm;
 }
 
-PacketMessage::PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm) : PacketMessage(from, msg, tm){
+PacketMessage::PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm) : PacketMessage(from, msg, tm) {
 	to_id = to->getId();
 }
 
-PacketMessage::~PacketMessage(){
+PacketMessage::~PacketMessage() {
 
 }
 
-void PacketMessage::deserialize(const Json::Value &obj){
+void PacketMessage::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 
 	message = obj["message"].asString();
@@ -91,7 +91,7 @@ void PacketMessage::deserialize(const Json::Value &obj){
 	msgtime = obj["time"].asUInt64();
 
 	message = regex_replace(message, regex("\n{3,}"), "\n\n\n");
-	if (message.size() > 30*1024){
+	if (message.size() > 30*1024) {
 		message = string(message, 0, 30*1024);
 	}
 	replaceInvalidUtf8(message, ' ');
@@ -112,20 +112,20 @@ Json::Value PacketMessage::serialize() const {
 	return obj;
 }
 
-void PacketMessage::process(Client &client){
-	if (!target.empty() && !message.empty()){
+void PacketMessage::process(Client &client) {
+	if (!target.empty() && !message.empty()) {
 		time_t curtime = time(nullptr);
-		if (curtime - client.lastMessageTime > 1){
+		if (curtime - client.lastMessageTime > 1) {
 			client.messageCounter = 0;
 			client.lastMessageTime = curtime;
 		}
 
-		if (client.messageCounter > 3){
+		if (client.messageCounter > 3) {
 			client.sendPacket(PacketSystem(target, "Вы слишком часто пишете!"));
 			return;
 		}
 
-		if (regex_match(message, regex("\\s*"))){
+		if (regex_match(message, regex("\\s*"))) {
 			client.sendPacket(PacketSystem(target, "Вы забыли написать текст сообщения :("));
 			return;
 		}
@@ -133,7 +133,7 @@ void PacketMessage::process(Client &client){
 		++client.messageCounter;
 
 		auto room = client.getRoomByName(target);
-		if (!room){
+		if (!room) {
 			client.sendPacket(PacketSystem("", string("Вы не можете писать в комнату \"") + target + "\""));
 			return;
 		}
@@ -193,8 +193,8 @@ CommandProcessor PacketMessage::cmd_admin {
 	new CommandIpCounter(),
 };
 
-bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string &msg){
-	if (msg[0] != '/'){
+bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string &msg) {
+	if (msg[0] != '/') {
 		return false;
 	}
 
@@ -204,23 +204,23 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 	static regex r_cmd("^/([^\\s]+)");
 	static regex r_spaces("^\\s+");
 
-	if (parser.next(r_cmd)){
+	if (parser.next(r_cmd)) {
 		badcmd = false;
 		string cmd;
 		parser >> cmd;
 		parser.next(r_spaces);
 
-		if (member->isAdmin() && cmd_admin.process(cmd, member, parser)){}
-		else if (member->isOwner() && cmd_owner.process(cmd, member, parser)){}
-		else if (member->isModer() && cmd_moder.process(cmd, member, parser)){}
-		else if (member->hasNick() && cmd_user.process(cmd, member, parser)){}
-		else if (cmd_all.process(cmd, member, parser)){}
+		if (member->isAdmin() && cmd_admin.process(cmd, member, parser)) {}
+		else if (member->isOwner() && cmd_owner.process(cmd, member, parser)) {}
+		else if (member->isModer() && cmd_moder.process(cmd, member, parser)) {}
+		else if (member->hasNick() && cmd_user.process(cmd, member, parser)) {}
+		else if (cmd_all.process(cmd, member, parser)) {}
 		else {
 			badcmd = true;
 		}
 	}
 
-	if (badcmd){
+	if (badcmd) {
 		member->sendPacket(PacketSystem(room->getName(), "Такая команда не существует или вы не вошли в чат"));
 	}
 
@@ -229,7 +229,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 
 //----
 
-PacketOnlineList::PacketOnlineList(){
+PacketOnlineList::PacketOnlineList() {
 	type = Type::online_list;
 }
 
@@ -238,19 +238,19 @@ PacketOnlineList::PacketOnlineList(RoomPtr room, std::optional<uint32_t> seqId) 
 	target = room->getName();
 	list = Json::Value(Json::arrayValue);
 	auto members = room->getMembers();
-	for (MemberPtr m : members){
-		if (!m->getNick().empty()){
+	for (MemberPtr m : members) {
+		if (!m->getNick().empty()) {
 			PacketStatus pack(m);
 			list.append(pack.serialize());
 		}
 	}
 }
 
-PacketOnlineList::~PacketOnlineList(){
+PacketOnlineList::~PacketOnlineList() {
 
 }
 
-void PacketOnlineList::deserialize(const Json::Value &obj){
+void PacketOnlineList::deserialize(const Json::Value &obj) {
 	target = obj["target"].asString();
 }
 
@@ -262,9 +262,9 @@ Json::Value PacketOnlineList::serialize() const {
 	return res;
 }
 
-void PacketOnlineList::process(Client &client){
+void PacketOnlineList::process(Client &client) {
 	auto room = client.getRoomByName(target);
-	if (!room){
+	if (!room) {
 		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\""));
 		return;
 	}
@@ -274,15 +274,15 @@ void PacketOnlineList::process(Client &client){
 
 //----
 
-PacketAuth::PacketAuth(){
+PacketAuth::PacketAuth() {
 	type = Type::auth;
 }
 
-PacketAuth::~PacketAuth(){
+PacketAuth::~PacketAuth() {
 
 }
 
-void PacketAuth::deserialize(const Json::Value &obj){
+void PacketAuth::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 
 	ukey = obj["ukey"].asString();
@@ -299,7 +299,7 @@ Json::Value PacketAuth::serialize() const {
 	return obj;
 }
 
-void PacketAuth::process(Client &client){
+void PacketAuth::process(Client &client) {
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
 	auto connection = client.getConnection();
@@ -311,18 +311,18 @@ void PacketAuth::process(Client &client){
 		try {
 			int uid = 0;
 
-			auto initUser = [&](int uid, int gid, const string &name){
+			auto initUser = [&](int uid, int gid, const string &name) {
 				client.setID(uid);
 				client.setName(name);
 				client.setGirl(gid == 4);
 				client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
 			};
 
-			if (!ukey.empty()){
+			if (!ukey.empty()) {
 				redis.get("chat-key-" + ukey, uid);
 			}
-			else if (!api_key.empty()){
-				if (!gate.auth(client.getIP())){
+			else if (!api_key.empty()) {
+				if (!gate.auth(client.getIP())) {
 					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
@@ -331,7 +331,7 @@ void PacketAuth::process(Client &client){
 				ps->setString(1, api_key);
 
 				auto rs = ps.executeQuery();
-				if (rs->next()){
+				if (rs->next()) {
 					uid = rs->getInt(1);
 					gate.auth(client.getIP(), true);
 				}
@@ -349,17 +349,17 @@ void PacketAuth::process(Client &client){
 				}
 			}
 
-			if (uid != 0){
+			if (uid != 0) {
 				auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
 				ps->setInt(1, uid);
 
 				auto rs = ps.executeQuery();
-				if (rs->next()){
+				if (rs->next()) {
 					initUser(uid, rs->getInt(2), rs->getString(1));
 				}
 			}
-			else if (!name.empty() && !password.empty()){
-				if (!gate.auth(client.getIP())){
+			else if (!name.empty() && !password.empty()) {
+				if (!gate.auth(client.getIP())) {
 					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
@@ -369,7 +369,7 @@ void PacketAuth::process(Client &client){
 				ps->setString(2, password);
 
 				auto rs = ps.executeQuery();
-				if (rs->next()){
+				if (rs->next()) {
 					initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
 					gate.auth(client.getIP(), true);
 				} else {
@@ -377,7 +377,7 @@ void PacketAuth::process(Client &client){
 					return;
 				}
 			}
-		} catch (SQLException &e){
+		} catch (SQLException &e) {
 			Logger::error("[auth] SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
 			db.reconnect();
 			client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
@@ -394,7 +394,7 @@ void PacketAuth::process(Client &client){
 
 //----
 
-PacketStatus::PacketStatus(){
+PacketStatus::PacketStatus() {
 	type = Type::status;
 	status = Member::Status::bad;
 	member_id = 0;
@@ -428,11 +428,11 @@ PacketStatus::PacketStatus(MemberPtr member, const string &dt)
 
 }
 
-PacketStatus::~PacketStatus(){
+PacketStatus::~PacketStatus() {
 
 }
 
-void PacketStatus::deserialize(const Json::Value &obj){
+void PacketStatus::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 
 	target = obj["target"].asString();
@@ -456,24 +456,24 @@ Json::Value PacketStatus::serialize() const {
 	return obj;
 }
 
-void PacketStatus::process(Client &client){
+void PacketStatus::process(Client &client) {
 	auto room = client.getRoomByName(target);
 	MemberPtr member = nullptr;
 	if (room)
 		member = room->findMemberByClient(client.getSelfPtr());
 
-	if (status == Member::Status::away || status == Member::Status::back){
+	if (status == Member::Status::away || status == Member::Status::back) {
 		auto nstat = status == Member::Status::back ? Member::Status::online : Member::Status::away;
-		for (auto troom : client.getConnectedRooms()){
+		for (auto troom : client.getConnectedRooms()) {
 			auto mem = troom->findMemberByClient(client.getSelfPtr());
-			if (mem && !mem->getNick().empty()){
+			if (mem && !mem->getNick().empty()) {
 				mem->setStatus(nstat);
 				troom->sendPacketToAll(PacketStatus(mem, status));
 			}
 		}
 	}
-	else if (status == Member::Status::typing || status == Member::Status::stop_typing){
-		if (member && !member->getNick().empty()){
+	else if (status == Member::Status::typing || status == Member::Status::stop_typing) {
+		if (member && !member->getNick().empty()) {
 			room->sendPacketToAll(PacketStatus(member, status));
 		}
 	}
@@ -481,7 +481,7 @@ void PacketStatus::process(Client &client){
 
 //----
 
-PacketJoin::PacketJoin(){
+PacketJoin::PacketJoin() {
 	type = Type::join;
 	member_id = 0;
 	auto_login = true;
@@ -495,11 +495,11 @@ PacketJoin::PacketJoin(MemberPtr member, std::optional<uint32_t> seqId) : Packet
 	login = member->getNick();
 }
 
-PacketJoin::~PacketJoin(){
+PacketJoin::~PacketJoin() {
 
 }
 
-void PacketJoin::deserialize(const Json::Value &obj){
+void PacketJoin::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 
 	target = obj["target"].asString();
@@ -516,8 +516,8 @@ Json::Value PacketJoin::serialize() const {
 	return obj;
 }
 
-void PacketJoin::process(Client &client){
-	if (client.getRoomByName(target)){
+void PacketJoin::process(Client &client) {
+	if (client.getRoomByName(target)) {
 		PacketError error(type, target, PacketError::Code::already_connected, "Вы уже подключены к комнате \"" + target + "\"");
 		error.sequenceId = sequenceId;
 
@@ -527,7 +527,7 @@ void PacketJoin::process(Client &client){
 
 	auto server = client.getServer();
 	auto room = server->getRoomByName(target);
-	if (!room){
+	if (!room) {
 		PacketError error(type, target, PacketError::Code::not_found, "Комнаты \"" + target + "\" не существует");
 		error.sequenceId = sequenceId;
 
@@ -557,31 +557,31 @@ void PacketJoin::process(Client &client){
 		client.sendPacket(PacketJoin(m, sequenceId));
 		client.sendPacket(PacketOnlineList(room, sequenceId));
 
-		if (load_history){
-			for (const string &s : room->getHistory()){
+		if (load_history) {
+			for (const string &s : room->getHistory()) {
 				client.sendRawData(s);
 			}
 		}
 
 		string nick;
 
-		if (auto_login){
+		if (auto_login) {
 			auto info = room->getStoredMemberInfo(m);
-			if (info.user_id != 0){
+			if (info.user_id != 0) {
 				nick = info.nick;
 				m->setGirl(info.girl);
 				m->setColor(info.color);
 			}
 
-			if (!m->isModer()){
-				if (room->isBannedNick(nick)){
+			if (!m->isModer()) {
+				if (room->isBannedNick(nick)) {
 					m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") запрещен, выберите другой ник"));
 					nick.clear();
 				}
 			}
 
 			auto member = room->findMemberByNick(nick);
-			if (member){
+			if (member) {
 				m->sendPacket(PacketSystem("", "Выбранный вами ранее ник (" + nick + ") занят, выберите другой ник"));
 				nick.clear();
 			}
@@ -589,7 +589,7 @@ void PacketJoin::process(Client &client){
 
 		m->sendPacket(PacketSystem(room->getName(), "Введите /help для получения списка всех доступных команд"));
 
-		if (nick.empty()){
+		if (nick.empty()) {
 			m->sendPacket(PacketSystem(room->getName(), "Перед началом общения укажите свой ник: /nick MyNick"));
 		}
 		else {
@@ -600,7 +600,7 @@ void PacketJoin::process(Client &client){
 
 //----
 
-PacketLeave::PacketLeave(){
+PacketLeave::PacketLeave() {
 	type = Type::leave;
 }
 
@@ -609,11 +609,11 @@ PacketLeave::PacketLeave(string targ, std::optional<uint32_t> seqId) : PacketLea
 	target = targ;
 }
 
-PacketLeave::~PacketLeave(){
+PacketLeave::~PacketLeave() {
 
 }
 
-void PacketLeave::deserialize(const Json::Value &obj){
+void PacketLeave::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 	target = obj["target"].asString();
 }
@@ -625,7 +625,7 @@ Json::Value PacketLeave::serialize() const {
 	return obj;
 }
 
-void PacketLeave::process(Client &client){
+void PacketLeave::process(Client &client) {
 	auto room = client.getRoomByName(target);
 	if (!room) {
 		PacketError pack(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\"");
@@ -640,19 +640,19 @@ void PacketLeave::process(Client &client){
 
 //----
 
-PacketCreateRoom::PacketCreateRoom(){
+PacketCreateRoom::PacketCreateRoom() {
 	type = Type::create_room;
 }
 
-PacketCreateRoom::PacketCreateRoom(string targ) : PacketCreateRoom(){
+PacketCreateRoom::PacketCreateRoom(string targ) : PacketCreateRoom() {
 	target = targ;
 }
 
-PacketCreateRoom::~PacketCreateRoom(){
+PacketCreateRoom::~PacketCreateRoom() {
 
 }
 
-void PacketCreateRoom::deserialize(const Json::Value &obj){
+void PacketCreateRoom::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 
 	target = obj["target"].asString();
@@ -695,19 +695,19 @@ void PacketCreateRoom::process(Client &client) {
 
 //----
 
-PacketRemoveRoom::PacketRemoveRoom(){
+PacketRemoveRoom::PacketRemoveRoom() {
 	type = Type::remove_room;
 }
 
-PacketRemoveRoom::PacketRemoveRoom(string targ) : PacketRemoveRoom(){
+PacketRemoveRoom::PacketRemoveRoom(string targ) : PacketRemoveRoom() {
 	target = targ;
 }
 
-PacketRemoveRoom::~PacketRemoveRoom(){
+PacketRemoveRoom::~PacketRemoveRoom() {
 
 }
 
-void PacketRemoveRoom::deserialize(const Json::Value &obj){
+void PacketRemoveRoom::deserialize(const Json::Value &obj) {
 	Packet::deserialize(obj);
 
 	target = obj["target"].asString();
@@ -751,11 +751,11 @@ void PacketRemoveRoom::process(Client &client) {
 
 //----
 
-PacketPing::PacketPing(){
+PacketPing::PacketPing() {
 	type = Type::ping;
 }
 
-PacketPing::~PacketPing(){
+PacketPing::~PacketPing() {
 
 }
 
@@ -765,6 +765,6 @@ Json::Value PacketPing::serialize() const {
 	return obj;
 }
 
-void PacketPing::process(Client &client){
+void PacketPing::process(Client &client) {
 
 }

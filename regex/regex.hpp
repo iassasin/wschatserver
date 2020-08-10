@@ -26,12 +26,12 @@ private:
 	smatch _match;
 	
 	template<typename T>
-	void read_element(int el, T &val){
+	void read_element(int el, T &val) {
 		istringstream param(_match[el].str());
 		param >> val;
 	}
 	
-	void read_element(int el, string &val){
+	void read_element(int el, string &val) {
 		val = _match[el].str();
 	}
 public:
@@ -41,15 +41,15 @@ public:
 	bool next(const regex &rx);
 	
 	bool valid();
-	operator bool (){ return valid(); }
+	operator bool () { return valid(); }
 	
 	void set_input(const string &input);
 
-	inline string suffix(){ return _match.suffix(); }
+	inline string suffix() { return _match.suffix(); }
 	
 	template<typename T>
-	regex_parser &operator >> (T &val){
-		if (valid()){
+	regex_parser &operator >> (T &val) {
+		if (valid()) {
 			++_iter;
 			return read(_iter, val);
 		}
@@ -58,8 +58,8 @@ public:
 	}
 	
 	template<typename T>
-	regex_parser &read(int el, T &val){
-		if (_iter >= 0 && el >= 0 && el < (int) _match.size()){
+	regex_parser &read(int el, T &val) {
+		if (_iter >= 0 && el >= 0 && el < (int) _match.size()) {
 			read_element(el, val);
 		}
 		

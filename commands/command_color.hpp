@@ -16,19 +16,19 @@ public:
 		auto room = member->getRoom();
 
 		string clr;
-		if (parser.next(r_color)){
+		if (parser.next(r_color)) {
 			parser.read(0, clr);
-			if (clr[0] != '#'){
+			if (clr[0] != '#') {
 				clr = string("#") + clr;
 			}
 		}
 
-		if (clr.empty()){
+		if (clr.empty()) {
 			member->sendPacket(PacketSystem(room->getName(), "Указан неверный цвет"));
 		} else {
 			member->setColor(clr);
 
-			if (member->hasNick()){
+			if (member->hasNick()) {
 				room->sendPacketToAll(PacketStatus(member, Member::Status::color_change));
 			} else {
 				member->sendPacket(PacketStatus(member, Member::Status::color_change));
