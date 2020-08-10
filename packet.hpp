@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <optional>
 #include <jsoncpp/json/json.h>
 
 #include "client_fwd.hpp"
@@ -26,14 +27,15 @@ public:
 	};
 	
 	Type type;
+	std::optional<uint32_t> sequenceId;
 	
 	Packet();
 	virtual ~Packet();
 	
 	static std::unique_ptr<Packet> read(const std::string &data);
 	
-	virtual void deserialize(const Json::Value &) = 0;
-	virtual Json::Value serialize() const = 0;
+	virtual void deserialize(const Json::Value &);
+	virtual Json::Value serialize() const;
 	virtual void process(Client &) = 0;
 };
 

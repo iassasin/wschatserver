@@ -1,6 +1,7 @@
 #include "rooms.hpp"
 #include "packets.hpp"
 #include "config.hpp"
+#include "src/exceptions.hpp"
 #include <ctime>
 
 MemberInfo::MemberInfo(){
@@ -228,23 +229,14 @@ MemberPtr Room::addMember(ClientPtr user){
 
 	if (!m->isModer()){
 		if (bannedIps.find(user->getIP()) != bannedIps.end()){
-			user->sendPacket(PacketError(Packet::Type::join, name, PacketError::Code::user_banned, "Вы были забанены"));
-			return nullptr;
+			throw BannedByIPException("IP " + user->getIP() + " is banned");
 		}
 		else if (bannedUids.find(user->getID()) != bannedUids.end()){
-			PacketError error(Packet::Type::join, name, PacketError::Code::user_banned,
-					user->getID() == 0 ? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте"
-						: "Вы были забанены"
-			);
-			user->sendPacket(error);
-			return nullptr;
+			throw BannedByIDException("User id " + std::to_string(user->getID()) + " is banned");
 		}
 	}
 
 	auto res = members.insert(m);
-
-	user->sendPacket(PacketJoin(m));
-	user->sendPacket(PacketOnlineList(self.lock()));
 
 	if (res.second){
 		return *res.first;
@@ -258,8 +250,6 @@ bool Room::removeMember(ClientPtr user){
 	if (!m->getNick().empty()){
 		sendPacketToAll(PacketStatus(m, Member::Status::offline));
 	}
-
-	user->sendPacket(PacketLeave(name));
 
 	auto cli = m->getClient();
 	if (!cli->isGuest()){

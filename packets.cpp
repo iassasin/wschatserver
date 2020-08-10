@@ -6,6 +6,7 @@
 #include "logger.hpp"
 #include "db.hpp"
 #include "gate.hpp"
+#include "src/exceptions.hpp"
 
 #include <cstdlib>
 #include <memory>
@@ -17,12 +18,8 @@ using std::regex;
 
 //----
 
-void PacketError::deserialize(const Json::Value &obj){
-
-}
-
 Json::Value PacketError::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["source"] = (uint) source;
 	obj["target"] = target;
@@ -38,13 +35,17 @@ void PacketError::process(Client &client){
 //----
 
 PacketSystem::PacketSystem(){ type = Type::system; }
-PacketSystem::PacketSystem(const string &targ, const string &msg) :  target(targ), message(msg){ type = Type::system; }
+PacketSystem::PacketSystem(const string &targ, const string &msg, std::optional<uint32_t> seqId)
+		: target(targ), message(msg)
+{
+	type = Type::system;
+	sequenceId = seqId;
+}
+
 PacketSystem::~PacketSystem(){}
 
-void PacketSystem::deserialize(const Json::Value &obj){}
-
 Json::Value PacketSystem::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["message"] = message;
 	obj["target"] = target;
@@ -82,6 +83,8 @@ PacketMessage::~PacketMessage(){
 }
 
 void PacketMessage::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
+
 	message = obj["message"].asString();
 	target = obj["target"].asString();
 	to_id = obj["to"].asUInt();
@@ -95,7 +98,7 @@ void PacketMessage::deserialize(const Json::Value &obj){
 }
 
 Json::Value PacketMessage::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["id"] = id;
 	obj["type"] = (int) type;
 	obj["target"] = target;
@@ -230,7 +233,8 @@ PacketOnlineList::PacketOnlineList(){
 	type = Type::online_list;
 }
 
-PacketOnlineList::PacketOnlineList(RoomPtr room) : PacketOnlineList(){
+PacketOnlineList::PacketOnlineList(RoomPtr room, std::optional<uint32_t> seqId) : PacketOnlineList() {
+	sequenceId = seqId;
 	target = room->getName();
 	list = Json::Value(Json::arrayValue);
 	auto members = room->getMembers();
@@ -251,7 +255,7 @@ void PacketOnlineList::deserialize(const Json::Value &obj){
 }
 
 Json::Value PacketOnlineList::serialize() const {
-	Json::Value res;
+	auto res = Packet::serialize();
 	res["type"] = (int) type;
 	res["target"] = target;
 	res["list"] = list;
@@ -279,6 +283,8 @@ PacketAuth::~PacketAuth(){
 }
 
 void PacketAuth::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
+
 	ukey = obj["ukey"].asString();
 	api_key = obj["api_key"].asString();
 	name = obj["login"].asString();
@@ -286,7 +292,7 @@ void PacketAuth::deserialize(const Json::Value &obj){
 }
 
 Json::Value PacketAuth::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["user_id"] = user_id;
 	obj["name"] = name;
@@ -427,12 +433,14 @@ PacketStatus::~PacketStatus(){
 }
 
 void PacketStatus::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
+
 	target = obj["target"].asString();
 	status = (Member::Status) obj["status"].asInt();
 }
 
 Json::Value PacketStatus::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	obj["name"] = name;
@@ -480,7 +488,8 @@ PacketJoin::PacketJoin(){
 	load_history = true;
 }
 
-PacketJoin::PacketJoin(MemberPtr member) : PacketJoin(){
+PacketJoin::PacketJoin(MemberPtr member, std::optional<uint32_t> seqId) : PacketJoin() {
+	sequenceId = seqId;
 	target = member->getRoom()->getName();
 	member_id = member->getId();
 	login = member->getNick();
@@ -491,13 +500,15 @@ PacketJoin::~PacketJoin(){
 }
 
 void PacketJoin::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
+
 	target = obj["target"].asString();
 	auto_login = obj["auto_login"].asBool();
 	load_history = obj["load_history"].asBool();
 }
 
 Json::Value PacketJoin::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	obj["member_id"] = member_id;
@@ -507,19 +518,45 @@ Json::Value PacketJoin::serialize() const {
 
 void PacketJoin::process(Client &client){
 	if (client.getRoomByName(target)){
-		client.sendPacket(PacketError(type, target, PacketError::Code::already_connected, "Вы уже подключены к комнате \"" + target + "\""));
+		PacketError error(type, target, PacketError::Code::already_connected, "Вы уже подключены к комнате \"" + target + "\"");
+		error.sequenceId = sequenceId;
+
+		client.sendPacket(error);
 		return;
 	}
 
 	auto server = client.getServer();
 	auto room = server->getRoomByName(target);
 	if (!room){
-		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Комнаты \"" + target + "\" не существует"));
+		PacketError error(type, target, PacketError::Code::not_found, "Комнаты \"" + target + "\" не существует");
+		error.sequenceId = sequenceId;
+
+		client.sendPacket(error);
 		return;
 	}
 
-	auto m = client.joinRoom(room);
-	if (m){
+	MemberPtr m;
+
+	try {
+		m = client.joinRoom(room);
+	} catch (BannedByIPException &ex) {
+		PacketError pack(Packet::Type::join, room->getName(), PacketError::Code::user_banned, "Вы были забанены");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
+	} catch (BannedByIDException &ex) {
+		PacketError pack(Packet::Type::join, room->getName(), PacketError::Code::user_banned,
+					client.getID() == 0
+					? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте"
+					: "Вы были забанены"
+			);
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
+	}
+
+	if (m) {
+		client.sendPacket(PacketJoin(m, sequenceId));
+		client.sendPacket(PacketOnlineList(room, sequenceId));
+
 		if (load_history){
 			for (const string &s : room->getHistory()){
 				client.sendRawData(s);
@@ -567,7 +604,8 @@ PacketLeave::PacketLeave(){
 	type = Type::leave;
 }
 
-PacketLeave::PacketLeave(string targ) : PacketLeave(){
+PacketLeave::PacketLeave(string targ, std::optional<uint32_t> seqId) : PacketLeave() {
+	sequenceId = seqId;
 	target = targ;
 }
 
@@ -576,11 +614,12 @@ PacketLeave::~PacketLeave(){
 }
 
 void PacketLeave::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
 	target = obj["target"].asString();
 }
 
 Json::Value PacketLeave::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	return obj;
@@ -588,13 +627,15 @@ Json::Value PacketLeave::serialize() const {
 
 void PacketLeave::process(Client &client){
 	auto room = client.getRoomByName(target);
-	if (!room){
-		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\""));
+	if (!room) {
+		PacketError pack(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\"");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 
-	auto member = room->findMemberByClient(client.getSelfPtr());
 	client.leaveRoom(room);
+	client.sendPacket(*this);
 }
 
 //----
@@ -612,31 +653,39 @@ PacketCreateRoom::~PacketCreateRoom(){
 }
 
 void PacketCreateRoom::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
+
 	target = obj["target"].asString();
 }
 
 Json::Value PacketCreateRoom::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	return obj;
 }
 
-void PacketCreateRoom::process(Client &client){
-	if (client.isGuest()){
-		client.sendPacket(PacketError(type, target, PacketError::Code::access_denied, "Гости не могут создавать комнаты"));
+void PacketCreateRoom::process(Client &client) {
+	if (client.isGuest()) {
+		PacketError pack(type, target, PacketError::Code::access_denied, "Гости не могут создавать комнаты");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 
-	if (!regex_match(target, regex(R"(#[a-zA-Z\d\-_ \[\]\(\)]{3,24})"))){
-		client.sendPacket(PacketError(type, target, PacketError::Code::invalid_target, "Недопустимое имя комнаты"));
+	if (!regex_match(target, regex(R"(#[a-zA-Z\d\-_ \[\]\(\)]{3,24})"))) {
+		PacketError pack(type, target, PacketError::Code::invalid_target, "Недопустимое имя комнаты");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 
 	auto server = client.getServer();
 	auto room = server->createRoom(target);
-	if (!room){
-		client.sendPacket(PacketError(type, target, PacketError::Code::already_exists, "Такая комната уже существует"));
+	if (!room) {
+		PacketError pack(type, target, PacketError::Code::already_exists, "Такая комната уже существует");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 
@@ -659,35 +708,43 @@ PacketRemoveRoom::~PacketRemoveRoom(){
 }
 
 void PacketRemoveRoom::deserialize(const Json::Value &obj){
+	Packet::deserialize(obj);
+
 	target = obj["target"].asString();
 }
 
 Json::Value PacketRemoveRoom::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	obj["target"] = target;
 	return obj;
 }
 
-void PacketRemoveRoom::process(Client &client){
-	if (client.isGuest()){
-		client.sendPacket(PacketError(type, target, PacketError::Code::access_denied, "Гости не могут удалять комнаты"));
+void PacketRemoveRoom::process(Client &client) {
+	if (client.isGuest()) {
+		PacketError pack(type, target, PacketError::Code::access_denied, "Гости не могут удалять комнаты");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 
 	auto server = client.getServer();
 	auto room = server->getRoomByName(target);
 
-	if (!room){
-		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Такая комната не существует"));
+	if (!room) {
+		PacketError pack(type, target, PacketError::Code::not_found, "Такая комната не существует");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 
-	if (client.isAdmin() || client.getID() == room->getOwner()){
+	if (client.isAdmin() || client.getID() == room->getOwner()) {
 		server->removeRoom(target);
 		client.sendPacket(*this);
 	} else {
-		client.sendPacket(PacketError(type, target, PacketError::Code::access_denied, "Вы не можете удалить эту комнату"));
+		PacketError pack(type, target, PacketError::Code::access_denied, "Вы не можете удалить эту комнату");
+		pack.sequenceId = sequenceId;
+		client.sendPacket(pack);
 		return;
 	}
 }
@@ -702,12 +759,8 @@ PacketPing::~PacketPing(){
 
 }
 
-void PacketPing::deserialize(const Json::Value &obj){
-
-}
-
 Json::Value PacketPing::serialize() const {
-	Json::Value obj;
+	auto obj = Packet::serialize();
 	obj["type"] = (int) type;
 	return obj;
 }

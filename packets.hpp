@@ -35,9 +35,8 @@ public:
 	PacketError(Type src, Code cod, const string &inf = "") : PacketError(src, "", cod, inf){}
 	PacketError(Code cod, const string &inf = "") : PacketError(Type::error, cod, inf){}
 
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketSystem : public Packet {
@@ -48,12 +47,11 @@ public:
 	string message;
 	
 	PacketSystem();
-	PacketSystem(const string &targ, const string &msg);
+	PacketSystem(const string &targ, const string &msg, std::optional<uint32_t> seqId = {});
 	virtual ~PacketSystem();
-	
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketMessage : public Packet {
@@ -90,9 +88,9 @@ public:
 	PacketMessage(MemberPtr from, MemberPtr to, const string &msg, const time_t &tm);
 	virtual ~PacketMessage();
 	
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketOnlineList : public Packet {
@@ -103,12 +101,12 @@ public:
 	Json::Value list;
 
 	PacketOnlineList();
-	PacketOnlineList(RoomPtr room);
+	PacketOnlineList(RoomPtr room, std::optional<uint32_t> sequenceId = {});
 	virtual ~PacketOnlineList();
 	
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketAuth : public Packet {
@@ -124,9 +122,9 @@ public:
 	PacketAuth();
 	virtual ~PacketAuth();
 	
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketStatus : public Packet {
@@ -150,9 +148,9 @@ public:
 	PacketStatus(MemberPtr member, const string &data = "");
 	virtual ~PacketStatus();
 	
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketJoin : public Packet {
@@ -166,12 +164,12 @@ public:
 	bool load_history;
 
 	PacketJoin();
-	PacketJoin(MemberPtr member);
+	PacketJoin(MemberPtr member, std::optional<uint32_t> sequenceId = {});
 	virtual ~PacketJoin();
 
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketLeave : public Packet {
@@ -181,12 +179,12 @@ public:
 	string target;
 
 	PacketLeave();
-	PacketLeave(string targ);
+	PacketLeave(string targ, std::optional<std::uint32_t> = {});
 	virtual ~PacketLeave();
 
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketCreateRoom : public Packet {
@@ -199,9 +197,9 @@ public:
 	PacketCreateRoom(string targ);
 	virtual ~PacketCreateRoom();
 
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketRemoveRoom : public Packet {
@@ -214,9 +212,9 @@ public:
 	PacketRemoveRoom(string targ);
 	virtual ~PacketRemoveRoom();
 
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	void deserialize(const Json::Value &) override;
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 class PacketPing : public Packet {
@@ -226,9 +224,8 @@ public:
 	PacketPing();
 	virtual ~PacketPing();
 
-	virtual void deserialize(const Json::Value &);
-	virtual Json::Value serialize() const;
-	virtual void process(Client &);
+	Json::Value serialize() const override;
+	void process(Client &) override;
 };
 
 #endif

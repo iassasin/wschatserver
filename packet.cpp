@@ -45,3 +45,18 @@ std::unique_ptr<Packet> Packet::read(const std::string &data){
 	return pack;
 }
 
+void Packet::deserialize(const Json::Value &obj) {
+	if (obj.isMember("sequenceId")) {
+		sequenceId = obj["sequenceId"].asUInt();
+	}
+}
+
+Json::Value Packet::serialize() const {
+	Json::Value obj;
+
+	if (sequenceId) {
+		obj["sequenceId"] = sequenceId.value();
+	}
+
+	return obj;
+}

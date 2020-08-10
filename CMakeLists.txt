@@ -46,7 +46,8 @@ set(SOURCE_FILES
 		gate.hpp
 		utils.hpp
 		rooms_fwd.hpp
-		client_fwd.hpp)
+		client_fwd.hpp
+		src/exceptions.hpp)
 
 find_package(Boost COMPONENTS system regex REQUIRED)
 find_library(MYSQLCPPCONN mysqlcppconn)
