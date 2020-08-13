@@ -95,6 +95,7 @@ void Room::onDestroy() {
 	auto ptr = self.lock();
 	for (MemberPtr m : mems) {
 		m->client->leaveRoom(ptr);
+		m->client->sendPacket(PacketLeave(name));
 	}
 }
 
