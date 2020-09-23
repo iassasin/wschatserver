@@ -170,6 +170,10 @@ CommandProcessor PacketMessage::cmd_user {
 	new CommandPrivateMessageById(),
 };
 
+CommandProcessor PacketMessage::cmd_auth_user {
+	new CommandMyRoomList(),
+};
+
 CommandProcessor PacketMessage::cmd_moder {
 	new CommandModerList(),
 	new CommandBanList(),
@@ -214,6 +218,7 @@ bool PacketMessage::processCommand(MemberPtr member, RoomPtr room, const string 
 		else if (member->isOwner() && cmd_owner.process(cmd, member, parser)) {}
 		else if (member->isModer() && cmd_moder.process(cmd, member, parser)) {}
 		else if (member->hasNick() && cmd_user.process(cmd, member, parser)) {}
+		else if (member->getClient()->getID() > 0 && cmd_auth_user.process(cmd, member, parser)) {}
 		else if (cmd_all.process(cmd, member, parser)) {}
 		else {
 			badcmd = true;

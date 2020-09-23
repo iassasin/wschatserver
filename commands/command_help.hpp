@@ -12,6 +12,7 @@ class CommandHelp : public Command {
 private:
 	string help_all;
 	string help_user;
+	string help_auth_user;
 	string help_moder;
 	string help_owner;
 	string help_admin;
@@ -29,6 +30,7 @@ private:
 	void generateHelp() {
 		help_all = createHelpForCommands(PacketMessage::cmd_all);
 		help_user = createHelpForCommands(PacketMessage::cmd_user);
+		help_auth_user = createHelpForCommands(PacketMessage::cmd_auth_user);
 		help_moder = createHelpForCommands(PacketMessage::cmd_moder);
 		help_owner = createHelpForCommands(PacketMessage::cmd_owner);
 		help_admin = createHelpForCommands(PacketMessage::cmd_admin);
@@ -42,6 +44,10 @@ public:
 		auto room = member->getRoom();
 
 		string message = "\nДоступные команды:\n" + help_all + help_user;
+
+		if (member->getClient()->getID() > 0) {
+			message += help_auth_user;
+		}
 
 		if (member->isOwner()) {
 			message += "\nВладелец комнаты:\n" + help_owner;

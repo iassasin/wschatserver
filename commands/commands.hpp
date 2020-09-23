@@ -18,5 +18,6 @@
 #include "command_userlist.hpp"
 #include "command_roomlist.hpp"
 #include "command_ipcounter.hpp"
+#include "command_myroomlist.hpp"
 
 #endif //BUILD_COMMANDS_HPP

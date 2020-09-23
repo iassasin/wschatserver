@@ -14,7 +14,7 @@ inline std::string getRealClientIp(shared_ptr<WSServerBase::Connection> connecti
 		return iphdr->second;
 	}
 
-	return connection->remote_endpoint_address();
+	return connection->remote_endpoint().address().to_string();
 }
 
 #endif //WSSERVER_UTILS_HPP

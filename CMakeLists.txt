@@ -40,6 +40,7 @@ set(SOURCE_FILES
 		commands/command_ban.hpp
 		commands/command_userlist.hpp
 		commands/command_roomlist.hpp
+		commands/command_myroomlist.hpp
 		commands/command_ipcounter.hpp
 		commands/command_help.hpp
 		logger.hpp

@@ -65,6 +65,7 @@ public:
 
 	static CommandProcessor cmd_all;
 	static CommandProcessor cmd_user;
+	static CommandProcessor cmd_auth_user;
 	static CommandProcessor cmd_moder;
 	static CommandProcessor cmd_owner;
 	static CommandProcessor cmd_admin;
