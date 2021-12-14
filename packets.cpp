@@ -307,7 +307,6 @@ Json::Value PacketAuth::serialize() const {
 void PacketAuth::process(Client &client) {
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
-	auto connection = client.getConnection();
 	try {
 		Database db;
 		Gate gate;

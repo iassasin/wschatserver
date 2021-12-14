@@ -19,7 +19,7 @@ using std::unique_ptr;
 
 class Redis {
 private:
-	static boost::asio::io_service io;
+	static boost::asio::io_context io;
 	static redisclient::RedisSyncClient redisInstance;
 	
 	Redis(const Redis &) = delete;

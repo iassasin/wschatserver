@@ -17,7 +17,7 @@ Server::Server(int port) : server()
 
 	auto& chat = server.endpoint["^/chat/?$"];
 	
-	chat.on_message = [&](auto connection, auto message) {
+	chat.on_message = [&](ConnectionPtr connection, shared_ptr<InMessage> message) {
 		string msg = message->string();
 		try {
 			if (clients.find(connection) != clients.end()) {
@@ -30,7 +30,7 @@ Server::Server(int port) : server()
 		}
 	};
 	
-	chat.on_open = [&, this](auto connection) {
+	chat.on_open = [&, this](ConnectionPtr connection) {
 		ClientPtr cli = make_shared<Client>(this, connection);
 		cli->setSelfPtr(cli);
 
@@ -46,7 +46,7 @@ Server::Server(int port) : server()
 	    clients[connection] = cli;
 	};
 	
-	chat.on_close = [&](auto connection, int status, const string& reason) {
+	chat.on_close = [&](ConnectionPtr connection, int status, const string& reason) {
 		auto ip = getRealClientIp(connection);
 	    Logger::info("Closed connection from ", ip, " with status code ", status);
 
@@ -135,11 +135,11 @@ void Server::deserialize(const Json::Value &val) {
 	}
 }
 
-void Server::sendRawData(shared_ptr<WSServerBase::Connection> conn, const string &rdata) {
+void Server::sendRawData(ConnectionPtr conn, const string &rdata) {
 	conn->send(rdata);
 }
 
-void Server::sendPacket(shared_ptr<WSServerBase::Connection> conn, const Packet &pack) {
+void Server::sendPacket(ConnectionPtr conn, const Packet &pack) {
 	Json::FastWriter wr;
 	conn->send(wr.write(pack.serialize()));
 }
