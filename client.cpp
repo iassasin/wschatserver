@@ -6,7 +6,7 @@
 #include "logger.hpp"
 #include "utils.hpp"
 
-Client::Client(Server *srv, shared_ptr<WSServerBase::Connection> conn) {
+Client::Client(Server *srv, ConnectionPtr conn) {
 	server = srv;
 	connection = conn;
 	uid = 0;

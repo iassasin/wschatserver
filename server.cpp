@@ -10,9 +10,9 @@
 #include "logger.hpp"
 #include "utils.hpp"
 
-Server::Server(int port) : server()
+Server::Server(const Config &config) : server(), clientsManager(this)
 {
-	server.config.port = (unsigned short) port;
+	server.config.port = (unsigned short) config["port"].asInt();
 	server.config.thread_pool_size = 1;
 
 	auto& chat = server.endpoint["^/chat/?$"];
@@ -20,8 +20,8 @@ Server::Server(int port) : server()
 	chat.on_message = [&](ConnectionPtr connection, shared_ptr<InMessage> message) {
 		string msg = message->string();
 		try {
-			if (clients.find(connection) != clients.end()) {
-				clients[connection]->onPacket(msg);
+			if (auto client = clientsManager.findClientByConnection(connection); client) {
+				client->onPacket(msg);
 			}
 		} catch (const exception &e) {
 			Logger::error("Exception: ", e.what(), "\nWhile processing message:", msg);
@@ -31,36 +31,37 @@ Server::Server(int port) : server()
 	};
 	
 	chat.on_open = [&, this](ConnectionPtr connection) {
-		ClientPtr cli = make_shared<Client>(this, connection);
-		cli->setSelfPtr(cli);
+		auto ip = getRealClientIp(connection);
 
-		Logger::info("Opened connection from ", cli->getIP());
+		Logger::info("Opened connection from ", ip);
 
-		auto &cnt = connectionsCountFromIp[cli->getIP()];
-		if (cnt >= 5) { //TODO: to config
-			Logger::info("Connections limit reached for ", cli->getIP());
+		auto counter = clientsManager.getCounterFromIp(ip);
+
+		if (counter.connections >= maxConnectionsFromIp) {
+			Logger::info("Connections limit reached for ", ip);
 			connection->send_close(0);
+			return;
 		}
-		++cnt;
 
-	    clients[connection] = cli;
+		if (counter.clients >= maxClientsFromIp) {
+			Logger::info("Orphan clients reached for ", ip, ", try to kill oldest orphan");
+
+			auto orphanCli = clientsManager.findFirstClient([&](ClientPtr c) { return false; }); // TODO
+			if (orphanCli) {
+				clientsManager.remove(orphanCli);
+			} else {
+				Logger::warn("Not found oldest orphan. Wtf? Did maxClientsFromIp < maxConnectionsFromIp?");
+			}
+		}
+
+		clientsManager.connect(connection);
 	};
 	
 	chat.on_close = [&](ConnectionPtr connection, int status, const string& reason) {
 		auto ip = getRealClientIp(connection);
 	    Logger::info("Closed connection from ", ip, " with status code ", status);
 
-		auto &cnt = connectionsCountFromIp[ip];
-		--cnt;
-
-		if (cnt <= 0) {
-			connectionsCountFromIp.erase(ip);
-		}
-
-	    if (clients.find(connection) != clients.end()) {
-			clients[connection]->onDisconnect();
-			clients.erase(connection);
-	    }
+	    clientsManager.disconnect(connection);
 	};
 	
 	chat.on_error = [&](auto connection, const boost::system::error_code& ec) {
@@ -68,37 +69,24 @@ Server::Server(int port) : server()
 		Logger::warn("Error in connection from ", ip,
 				". Error: ", ec, ", error message: ", ec.message());
 
-		auto &cnt = connectionsCountFromIp[ip];
-		--cnt;
-
-		if (cnt <= 0) {
-			connectionsCountFromIp.erase(ip);
-		}
-
-		if (clients.find(connection) != clients.end()) {
-			clients[connection]->onDisconnect();
-			clients.erase(connection);
-		}
+	    clientsManager.disconnect(connection);
 	};
 
 	server.runWithInterval(pingInterval, [&]{
 		time_t cur = time(nullptr);
 		vector<ClientPtr> toKick;
 
-		for (auto c : clients) {
-			auto &cli = c.second;
-
+		for (auto &&cli : clientsManager.getClients()) {
 			if (cur - cli->lastPacketTime > connectTimeout) {
 				toKick.push_back(cli);
 			}
 			else if (cur - cli->lastPacketTime > pingTimeout) {
-				//cout << date("[%H:%M:%S] ") << "Server: Sending ping to " << cli->getName() << " [" << cli->getIP() << "]" << endl;
 				cli->sendPacket(PacketPing());
 			}
 		}
 
 		for (auto cli : toKick) {
-			kick(cli);
+			clientsManager.remove(cli);
 			Logger::info("Kicked by no ping: ", cli->getName(), " [", cli->getIP(), "]");
 		}
 	});
@@ -106,7 +94,6 @@ Server::Server(int port) : server()
 
 void Server::start() {
 	Logger::info("Started wsserver at port ", server.config.port);
-	connectionsCountFromIp.clear();
 	server.start();
 }
 
@@ -142,52 +129,6 @@ void Server::sendRawData(ConnectionPtr conn, const string &rdata) {
 void Server::sendPacket(ConnectionPtr conn, const Packet &pack) {
 	Json::FastWriter wr;
 	conn->send(wr.write(pack.serialize()));
-}
-
-void Server::sendPacketToAll(const Packet &pack) {
-	Json::FastWriter wr;
-	auto response_ss = make_shared<OutMessage>();
-	*response_ss << wr.write(pack.serialize());
-
-	for (auto conn : server.get_connections()) {
-		//TODO: maybe response_ss->seekg(0);
-		conn->send(response_ss);
-	}
-}
-
-ClientPtr Server::getClientByName(string name) {
-	for (auto clip : clients) {
-		auto cli = clip.second;
-		if (!cli->getName().empty() && cli->getName() == name)
-			return cli; 
-	}
-	return ClientPtr();
-}
-
-ClientPtr Server::getClientByID(uint uid) {
-	for (auto clip : clients) {
-		auto cli = clip.second;
-		if (cli->getID() > 0 && cli->getID() == uid)
-			return cli; 
-	}
-	return ClientPtr();
-}
-
-vector<ClientPtr> Server::getClients() {
-	vector<ClientPtr> res;
-	for (auto clip : clients) {
-		auto &cli = clip.second;
-		res.push_back(cli);
-	}
-
-	return res;
-}
-
-void Server::kick(ClientPtr client) {
-	auto conn = client->getConnection();
-	clients.erase(conn);
-	client->onDisconnect();
-	conn->send_close(0);
 }
 
 RoomPtr Server::createRoom(string name) {

@@ -1,20 +1,15 @@
 #ifndef SERVER_H_
 #define SERVER_H_
 
-#include <jsoncpp/json/json.h>
-#include "server_ws_ex.hpp"
-
-class Server;
-using WSServerBase = SimpleWeb::SocketServerBase<SimpleWeb::WS>;
-using WSServer = WebSocketServerEx;
-
 #include <unordered_set>
 #include <unordered_map>
 
+#include "server_fwd.hpp"
 #include "client_fwd.hpp"
 #include "packet.hpp"
 #include "redis.hpp"
 #include "rooms_fwd.hpp"
+#include "src/clients_manager.hpp"
 
 using namespace std;
 
@@ -22,19 +17,18 @@ class Server {
 public:
 	using OutMessage = WSServerBase::OutMessage;
 	using InMessage = WSServerBase::InMessage;
-	using ConnectionPtr = shared_ptr<WSServerBase::Connection>;
 private:
-	static const int connectTimeout = 5*60;
-	static const int pingTimeout = 3*60;
-	static const int pingInterval = 30000;
+	int connectTimeout = 5*60;
+	int pingTimeout = 3*60;
+	int pingInterval = 30000;
+	int maxConnectionsFromIp = 5;
+	int maxClientsFromIp = 5;
 
-	unordered_map<ConnectionPtr, ClientPtr> clients;
-	unordered_map<string, uint> connectionsCountFromIp;
+	ClientsManager clientsManager;
 	WSServer server;
-
 	unordered_set<RoomPtr> rooms;
 public:
-	Server(int port);
+	Server(const Config &config);
 	~Server() { stop(); }
 	
 	void start();
@@ -43,22 +37,16 @@ public:
 	Json::Value serialize();
 	void deserialize(const Json::Value &);
 
-	void kick(ClientPtr client);
 	void sendPacket(ConnectionPtr conn, const Packet &);
-	void sendPacketToAll(const Packet &);
 	void sendRawData(ConnectionPtr conn, const string &rdata);
-	
-	ClientPtr getClientByName(string name);
-	ClientPtr getClientByID(uint uid);
-	
-	vector<ClientPtr> getClients();
+
 	const unordered_set<RoomPtr> &getRooms() { return rooms; }
 
 	RoomPtr createRoom(string name);
 	bool removeRoom(string name);
 	RoomPtr getRoomByName(string name);
 
-	const unordered_map<string, uint> &getConnectionsCounter() { return connectionsCountFromIp; }
+	const unordered_map<string, ClientsManager::Counter> &getClientsCounters() { return clientsManager.getCounters(); }
 };
 
 #endif

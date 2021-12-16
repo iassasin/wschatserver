@@ -3,7 +3,7 @@
 
 #include "client_fwd.hpp"
 #include "packet.hpp"
-#include "server.hpp"
+#include "server_fwd.hpp"
 #include "rooms_fwd.hpp"
 
 using namespace std;
@@ -26,7 +26,7 @@ public:
 	time_t lastMessageTime;
 	int messageCounter;
 
-	Client(Server *srv, shared_ptr<WSServerBase::Connection> conn);
+	Client(Server *srv, ConnectionPtr conn);
 	~Client();
 	
 	void setSelfPtr(weak_ptr<Client> wptr) { self = wptr; }
