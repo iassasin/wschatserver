@@ -6,24 +6,26 @@
 #include "logger.hpp"
 #include "utils.hpp"
 
-Client::Client(Server *srv, ConnectionPtr conn) {
+Client::Client(Server *srv) {
 	server = srv;
-	connection = conn;
 	uid = 0;
 	lastMessageTime = time(nullptr);
 	lastPacketTime = lastMessageTime;
 	messageCounter = 0;
 	_isGirl = false;
 	color = "gray";
-	clientIP = getRealClientIp(conn);
-
-	if (auto cookie = conn->header.find("Cookie"); cookie != conn->header.end()) {
-		cookies = SimpleWeb::HttpHeader::FieldValue::SemicolonSeparatedAttributes::parse(cookie->second);
-	}
 }
 
 Client::~Client() {
 
+}
+
+void Client::setConnection(ConnectionPtr conn) {
+	connection = conn;
+
+	if (conn) {
+		lastClientIP = getRealClientIp(conn);
+	}
 }
 
 void Client::onPacket(string msg) {
@@ -37,6 +39,12 @@ void Client::onPacket(string msg) {
 }
 
 void Client::onDisconnect() {
+	setConnection(nullptr);
+}
+
+void Client::onRemove() {
+	onDisconnect();
+
 	auto ptr = self.lock();
 	for (RoomPtr room : rooms) {
 		auto member = room->findMemberByClient(ptr);

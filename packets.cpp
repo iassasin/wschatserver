@@ -305,6 +305,7 @@ Json::Value PacketAuth::serialize() const {
 }
 
 void PacketAuth::process(Client &client) {
+	auto connection = client.getConnection();
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
 	try {
@@ -326,7 +327,7 @@ void PacketAuth::process(Client &client) {
 				redis.get("chat-key-" + ukey, uid);
 			}
 			else if (!api_key.empty()) {
-				if (!gate.auth(client.getIP())) {
+				if (!gate.auth(client.getLastIP())) {
 					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
@@ -337,18 +338,25 @@ void PacketAuth::process(Client &client) {
 				auto rs = ps.executeQuery();
 				if (rs->next()) {
 					uid = rs->getInt(1);
-					gate.auth(client.getIP(), true);
+					gate.auth(client.getLastIP(), true);
 				}
 			}
 			else if (!name.empty() && !password.empty()) {
 				// placeholder
 			}
 			// http-header authentication
-			else if (auto sinidIt = client.getCookies().find("sinid"); sinidIt != client.getCookies().end()) {
-				Json::Value session;
-				if (redis.getJson("session:" + sinidIt->second, session)) {
-					if (session.isMember("user_id")) {
-						uid = std::stoi(session["user_id"].asString());
+			else {
+				SimpleWeb::CaseInsensitiveMultimap cookies;
+				if (auto cookie = connection->header.find("Cookie"); cookie != connection->header.end()) {
+					cookies = SimpleWeb::HttpHeader::FieldValue::SemicolonSeparatedAttributes::parse(cookie->second);
+				}
+
+				if (auto sinidIt = cookies.find("sinid"); sinidIt != cookies.end()) {
+					Json::Value session;
+					if (redis.getJson("session:" + sinidIt->second, session)) {
+						if (session.isMember("user_id")) {
+							uid = std::stoi(session["user_id"].asString());
+						}
 					}
 				}
 			}
@@ -363,7 +371,7 @@ void PacketAuth::process(Client &client) {
 				}
 			}
 			else if (!name.empty() && !password.empty()) {
-				if (!gate.auth(client.getIP())) {
+				if (!gate.auth(client.getLastIP())) {
 					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
@@ -375,7 +383,7 @@ void PacketAuth::process(Client &client) {
 				auto rs = ps.executeQuery();
 				if (rs->next()) {
 					initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
-					gate.auth(client.getIP(), true);
+					gate.auth(client.getLastIP(), true);
 				} else {
 					client.sendPacket(PacketError(type, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
 					return;

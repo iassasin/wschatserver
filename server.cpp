@@ -46,7 +46,9 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 		if (counter.clients >= maxClientsFromIp) {
 			Logger::info("Orphan clients reached for ", ip, ", try to kill oldest orphan");
 
-			auto orphanCli = clientsManager.findFirstClient([&](ClientPtr c) { return false; }); // TODO
+			auto orphanCli = clientsManager.findFirstClient([&](ClientPtr c) {
+				return !c->getConnection() && c->getLastIP() == ip;
+			});
 			if (orphanCli) {
 				clientsManager.remove(orphanCli);
 			} else {
@@ -87,7 +89,7 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 
 		for (auto cli : toKick) {
 			clientsManager.remove(cli);
-			Logger::info("Kicked by no ping: ", cli->getName(), " [", cli->getIP(), "]");
+			Logger::info("Kicked by no ping: ", cli->getName(), " [", cli->getLastIP(), "]");
 		}
 	});
 }

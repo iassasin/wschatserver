@@ -36,10 +36,11 @@ public:
 	}
 
 	void connect(ConnectionPtr connection) {
-		ClientPtr cli = std::make_shared<Client>(server, connection);
+		ClientPtr cli = std::make_shared<Client>(server);
 		cli->setSelfPtr(cli);
+		cli->setConnection(connection);
 
-		auto ip = cli->getIP();
+		auto ip = cli->getLastIP();
 
 		clients.push_back(cli);
 		connectionToClient[connection] = cli;
@@ -59,16 +60,16 @@ public:
 	}
 
 	void disconnect(ClientPtr client) {
-		if (connectionToClient.erase(client->getConnection())) {
-			auto ip = client->getIP();
+		auto connection = client->getConnection();
+		if (connection && connectionToClient.erase(connection)) {
+			auto ip = client->getLastIP();
 			decrementForIp(ip, &Counter::connections);
+			client->onDisconnect();
 		}
 	}
 
 	void remove(ClientPtr client) {
-		auto ip = client->getIP();
-
-		client->onDisconnect();
+		auto ip = client->getLastIP();
 
 		if (connectionToClient.erase(client->getConnection())) {
 			decrementForIp(ip, &Counter::connections);
@@ -81,6 +82,8 @@ public:
 				break;
 			}
 		}
+
+		client->onRemove();
 	}
 
 	const auto &getClients() { return clients; }
