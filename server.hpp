@@ -18,8 +18,9 @@ public:
 	using OutMessage = WSServerBase::OutMessage;
 	using InMessage = WSServerBase::InMessage;
 private:
-	int connectTimeout = 5*60;
-	int pingTimeout = 3*60;
+	int orphanTimeout = 5*60;
+	int connectTimeout = 2.5*60;
+	int pingTimeout = 1*60;
 	int pingInterval = 30000;
 	int maxConnectionsFromIp = 5;
 	int maxClientsFromIp = 5;
@@ -27,6 +28,8 @@ private:
 	ClientsManager clientsManager;
 	WSServer server;
 	unordered_set<RoomPtr> rooms;
+
+	void closeConnection(ConnectionPtr connection);
 public:
 	Server(const Config &config);
 	~Server() { stop(); }

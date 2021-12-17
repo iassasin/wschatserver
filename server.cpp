@@ -79,17 +79,29 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 		vector<ClientPtr> toKick;
 
 		for (auto &&cli : clientsManager.getClients()) {
-			if (cur - cli->lastPacketTime > connectTimeout) {
+			auto timeWasted = cur - cli->lastPacketTime;
+			if (timeWasted > orphanTimeout) {
 				toKick.push_back(cli);
 			}
-			else if (cur - cli->lastPacketTime > pingTimeout) {
+			else if (timeWasted > connectTimeout) {
+				if (auto connection = cli->getConnection(); connection) {
+					closeConnection(connection);
+				}
+				clientsManager.disconnect(cli);
+
+				Logger::info("Orphaned connection (no ping): ", cli->getName(), " [", cli->getLastIP(), "]");
+			}
+			else if (timeWasted > pingTimeout) {
 				cli->sendPacket(PacketPing());
 			}
 		}
 
 		for (auto cli : toKick) {
+			if (auto connection = cli->getConnection(); connection) {
+				closeConnection(connection);
+			}
 			clientsManager.remove(cli);
-			Logger::info("Kicked by no ping: ", cli->getName(), " [", cli->getLastIP(), "]");
+			Logger::info("Kicked outdated orphaned connection: ", cli->getName(), " [", cli->getLastIP(), "]");
 		}
 	});
 }
@@ -168,5 +180,13 @@ RoomPtr Server::getRoomByName(string name) {
 	}
 
 	return nullptr;
+}
+
+void Server::closeConnection(ConnectionPtr connection) {
+	connection->send_close(0, "", [connection](auto ec){
+		if (ec) {
+			connection->close();
+		}
+	});
 }
 
