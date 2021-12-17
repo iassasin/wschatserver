@@ -20,12 +20,13 @@ private:
 	bool _isGirl;
 	string color;
 	string lastClientIP;
+	string clientToken;
 public:
 	time_t lastPacketTime;
 	time_t lastMessageTime;
 	int messageCounter;
 
-	Client(Server *srv);
+	Client(Server *srv, string clientToken);
 	~Client();
 	
 	void setSelfPtr(weak_ptr<Client> wptr) { self = wptr; }
@@ -41,6 +42,7 @@ public:
 	void setName(const string &nm) { name = nm; }
 	
 	string getLastIP() { return lastClientIP; }
+	string getClientToken() { return clientToken; }
 
 	uint getID() { return uid; }
 	void setID(int id) { uid = id; }

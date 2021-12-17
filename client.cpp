@@ -6,7 +6,7 @@
 #include "logger.hpp"
 #include "utils.hpp"
 
-Client::Client(Server *srv) {
+Client::Client(Server *srv, string clientTok) {
 	server = srv;
 	uid = 0;
 	lastMessageTime = time(nullptr);
@@ -14,6 +14,7 @@ Client::Client(Server *srv) {
 	messageCounter = 0;
 	_isGirl = false;
 	color = "gray";
+	clientToken = clientTok;
 }
 
 Client::~Client() {

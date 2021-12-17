@@ -7,6 +7,7 @@
 
 #include "../server_fwd.hpp"
 #include "../client.hpp"
+#include "../utils.hpp"
 
 class ClientsManager {
 public:
@@ -14,6 +15,8 @@ public:
 		uint connections;
 		uint clients;
 	};
+
+	int tokenLength = 64;
 public:
 	ClientsManager(Server *srv) : server(srv) { }
 
@@ -36,7 +39,13 @@ public:
 	}
 
 	void connect(ConnectionPtr connection) {
-		ClientPtr cli = std::make_shared<Client>(server);
+		string token;
+
+		do {
+			token = keygen.generate(tokenLength);
+		} while (tokenToClient.find(token) != tokenToClient.end());
+
+		ClientPtr cli = std::make_shared<Client>(server, token);
 		cli->setSelfPtr(cli);
 		cli->setConnection(connection);
 
@@ -44,6 +53,7 @@ public:
 
 		clients.push_back(cli);
 		connectionToClient[connection] = cli;
+		tokenToClient[token] = cli;
 
 		auto &counter = countersFromIp[ip];
 		++counter.clients;
@@ -78,6 +88,7 @@ public:
 		for (auto it = clients.begin(); it != clients.end(); ++it) {
 			if (*it == client) {
 				clients.erase(it);
+				tokenToClient.erase(client->getClientToken());
 				decrementForIp(ip, &Counter::clients);
 				break;
 			}
@@ -92,10 +103,12 @@ public:
 	const unordered_map<string, Counter> &getCounters() { return countersFromIp; }
 private:
 	Server *server;
+	Keygen keygen;
 
 	vector<ClientPtr> clients;
 	unordered_map<ConnectionPtr, ClientPtr> connectionToClient;
 	unordered_map<string, Counter> countersFromIp;
+	unordered_map<string, ClientPtr> tokenToClient;
 
 	void decrementForIp(string ip, uint Counter::*field) {
 		Counter &counter = countersFromIp[ip];
