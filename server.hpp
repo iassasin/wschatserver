@@ -18,6 +18,8 @@ public:
 	using OutMessage = WSServerBase::OutMessage;
 	using InMessage = WSServerBase::InMessage;
 private:
+	static constexpr int WS_CLOSE_CODE_OK = 1000;
+
 	int orphanTimeout = 5*60;
 	int connectTimeout = 2.5*60;
 	int pingTimeout = 1*60;

@@ -39,7 +39,7 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 
 		if (counter.connections >= maxConnectionsFromIp) {
 			Logger::info("Connections limit reached for ", ip);
-			connection->send_close(0);
+			connection->send_close(WS_CLOSE_CODE_OK);
 			return;
 		}
 
@@ -86,17 +86,16 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 			else if (timeWasted > connectTimeout) {
 				if (auto connection = cli->getConnection(); connection) {
 					closeConnection(connection);
+					clientsManager.disconnect(cli);
+					Logger::info("Orphaned connection (no ping): ", cli->getName(), " [", cli->getLastIP(), "]");
 				}
-				clientsManager.disconnect(cli);
-
-				Logger::info("Orphaned connection (no ping): ", cli->getName(), " [", cli->getLastIP(), "]");
 			}
 			else if (timeWasted > pingTimeout) {
 				cli->sendPacket(PacketPing());
 			}
 		}
 
-		for (auto cli : toKick) {
+		for (auto &&cli : toKick) {
 			if (auto connection = cli->getConnection(); connection) {
 				closeConnection(connection);
 			}
@@ -183,7 +182,7 @@ RoomPtr Server::getRoomByName(string name) {
 }
 
 void Server::closeConnection(ConnectionPtr connection) {
-	connection->send_close(0, "", [connection](auto ec){
+	connection->send_close(WS_CLOSE_CODE_OK, "", [connection](auto ec){
 		if (ec) {
 			connection->close();
 		}
