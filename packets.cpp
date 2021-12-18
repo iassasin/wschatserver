@@ -579,10 +579,14 @@ void PacketJoin::process(Client &client) {
 
 		if (auto_login) {
 			auto info = room->getStoredMemberInfo(m);
-			if (info.user_id != 0) {
-				nick = info.nick;
-				m->setGirl(info.girl);
-				m->setColor(info.color);
+			if (info) {
+				nick = info->nick;
+				m->setGirl(info->girl);
+				m->setColor(info->color);
+			} else {
+				nick = client.getName();
+				m->setGirl(client.isGirl());
+				m->setColor(client.getColor());
 			}
 
 			if (!m->isModer()) {

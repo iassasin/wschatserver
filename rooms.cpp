@@ -2,7 +2,6 @@
 #include "packets.hpp"
 #include "config.hpp"
 #include "src/exceptions.hpp"
-#include <ctime>
 
 MemberInfo::MemberInfo() {
 	user_id = 0;
@@ -260,15 +259,15 @@ bool Room::removeMember(ClientPtr user) {
 	return members.erase(m) > 0;
 }
 
-MemberInfo Room::getStoredMemberInfo(MemberPtr member) {
+std::optional<MemberInfo> Room::getStoredMemberInfo(MemberPtr member) {
 	uint uid = member->getClient()->getID();
 	if (uid == 0) {
-		return MemberInfo();
+		return std::nullopt;
 	}
 
 	auto mi = membersInfo.find(uid);
 	if (mi == membersInfo.end()) {
-		return MemberInfo();
+		return std::nullopt;
 	}
 
 	return mi->second;
