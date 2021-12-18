@@ -6,7 +6,7 @@
 #include "logger.hpp"
 #include "utils.hpp"
 
-Client::Client(Server *srv, string clientTok) {
+Client::Client(Server *srv, string tok) {
 	server = srv;
 	uid = 0;
 	lastMessageTime = time(nullptr);
@@ -14,7 +14,7 @@ Client::Client(Server *srv, string clientTok) {
 	messageCounter = 0;
 	_isGirl = false;
 	color = "gray";
-	clientToken = clientTok;
+	token = std::move(tok);
 }
 
 Client::~Client() {
@@ -59,11 +59,16 @@ void Client::onKick(RoomPtr room) {
 }
 
 void Client::sendPacket(const Packet &pack) {
-	server->sendPacket(connection, pack);
+	// TODO: очередь сообщений, пока не вернулся?
+	if (connection) {
+		server->sendPacket(connection, pack);
+	}
 }
 
 void Client::sendRawData(const string &data) {
-	server->sendRawData(connection, data);
+	if (connection) {
+		server->sendRawData(connection, data);
+	}
 }
 
 MemberPtr Client::joinRoom(RoomPtr room) {

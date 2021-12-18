@@ -294,6 +294,7 @@ void PacketAuth::deserialize(const Json::Value &obj) {
 	api_key = obj["api_key"].asString();
 	name = obj["login"].asString();
 	password = obj["password"].asString();
+	token = obj["token"].asString();
 }
 
 Json::Value PacketAuth::serialize() const {
@@ -301,6 +302,7 @@ Json::Value PacketAuth::serialize() const {
 	obj["type"] = (int) type;
 	obj["user_id"] = user_id;
 	obj["name"] = name;
+	obj["token"] = token;
 	return obj;
 }
 
@@ -401,6 +403,7 @@ void PacketAuth::process(Client &client) {
 
 	user_id = client.getID();
 	name = client.getName();
+	token = client.getToken();
 	client.sendPacket(*this);
 }
 

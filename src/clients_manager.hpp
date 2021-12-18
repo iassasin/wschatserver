@@ -88,7 +88,7 @@ public:
 		for (auto it = clients.begin(); it != clients.end(); ++it) {
 			if (*it == client) {
 				clients.erase(it);
-				tokenToClient.erase(client->getClientToken());
+				tokenToClient.erase(client->getToken());
 				decrementForIp(ip, &Counter::clients);
 				break;
 			}
