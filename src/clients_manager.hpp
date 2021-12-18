@@ -28,6 +28,14 @@ public:
 		return {};
 	}
 
+	ClientPtr findClientByToken(const string &token) {
+		if (auto clientIt = tokenToClient.find(token); clientIt != tokenToClient.end()) {
+			return clientIt->second;
+		}
+
+		return {};
+	}
+
 	template<typename Predicate>
 	ClientPtr findFirstClient(Predicate f) {
 		for (ClientPtr &client : clients) {
@@ -80,8 +88,9 @@ public:
 
 	void remove(ClientPtr client) {
 		auto ip = client->getLastIP();
+		auto connection = client->getConnection();
 
-		if (connectionToClient.erase(client->getConnection())) {
+		if (connection && connectionToClient.erase(connection)) {
 			decrementForIp(ip, &Counter::connections);
 		}
 
@@ -95,6 +104,20 @@ public:
 		}
 
 		client->onRemove();
+	}
+
+	bool reviveClient(ClientPtr currentClient, ClientPtr targetClient) {
+		auto currentConnection = currentClient->getConnection();
+		if (targetClient->getConnection() || !currentConnection) {
+			return false;
+		}
+
+		targetClient->setConnection(currentConnection);
+		remove(currentClient);
+		connectionToClient[currentConnection] = targetClient;
+		targetClient->onRevive();
+
+		return true;
 	}
 
 	const auto &getClients() { return clients; }

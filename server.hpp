@@ -50,6 +50,8 @@ public:
 	RoomPtr getRoomByName(string name);
 
 	const unordered_map<string, ClientsManager::Counter> &getClientsCounters() { return clientsManager.getCounters(); }
+	ClientPtr getClientByToken(const string &token) { return clientsManager.findClientByToken(token); }
+	bool reviveClient(ClientPtr currentClient, ClientPtr targetClient);
 };
 
 #endif

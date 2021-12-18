@@ -53,6 +53,7 @@ public:
 	ConnectionPtr getConnection() { return connection; }
 
 	void onPacket(string pack);
+	void onRevive();
 	void onDisconnect();
 	void onRemove();
 	void onKick(RoomPtr room);

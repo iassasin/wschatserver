@@ -39,19 +39,42 @@ void Client::onPacket(string msg) {
 	}
 }
 
+void Client::onRevive() {
+	auto ptr = self.lock();
+	for (RoomPtr room : rooms) {
+		auto member = room->findMemberByClient(ptr);
+
+		sendPacket(PacketJoin(member, {}));
+		sendPacket(PacketOnlineList(room, {}));
+
+		// TODO: load_history flag? Or dedicated PacketHistory
+		for (const string &s : room->getHistory()) {
+			sendRawData(s);
+		}
+
+		room->sendPacketToAll(PacketStatus(member, Member::Status::online));
+	}
+}
+
 void Client::onDisconnect() {
 	setConnection(nullptr);
+
+	auto ptr = self.lock();
+	for (RoomPtr room : rooms) {
+		auto member = room->findMemberByClient(ptr);
+		room->sendPacketToAll(PacketStatus(member, Member::Status::orphan));
+	}
 }
 
 void Client::onRemove() {
-	onDisconnect();
-
 	auto ptr = self.lock();
 	for (RoomPtr room : rooms) {
 		auto member = room->findMemberByClient(ptr);
 		room->removeMember(ptr);
 	}
+
 	rooms.clear();
+	setConnection(nullptr);
 }
 
 void Client::onKick(RoomPtr room) {

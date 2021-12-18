@@ -190,3 +190,6 @@ void Server::closeConnection(ConnectionPtr connection) {
 	});
 }
 
+bool Server::reviveClient(ClientPtr currentClient, ClientPtr targetClient) {
+	return clientsManager.reviveClient(currentClient, targetClient);
+}

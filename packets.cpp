@@ -308,6 +308,7 @@ Json::Value PacketAuth::serialize() const {
 
 void PacketAuth::process(Client &client) {
 	auto connection = client.getConnection();
+	auto server = client.getServer();
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
 	try {
@@ -325,7 +326,22 @@ void PacketAuth::process(Client &client) {
 				client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
 			};
 
-			if (!ukey.empty()) {
+			if (!token.empty()) {
+				ClientPtr orphanClient = server->getClientByToken(token);
+				if (orphanClient && !orphanClient->getConnection()) {
+					user_id = orphanClient->getID();
+					name = orphanClient->getName();
+					token = orphanClient->getToken();
+					// must be first packet after revive
+					client.sendPacket(*this);
+
+					if (!server->reviveClient(client.getSelfPtr(), orphanClient)) {
+						Logger::error("Something strange: orphan client can't be revived: ", client.getLastIP());
+					}
+					return;
+				}
+			}
+			else if (!ukey.empty()) {
 				redis.get("chat-key-" + ukey, uid);
 			}
 			else if (!api_key.empty()) {

@@ -49,6 +49,7 @@ public:
 		back,
 		typing,
 		stop_typing,
+		orphan,
 	};
 private:
 	friend class Room;
