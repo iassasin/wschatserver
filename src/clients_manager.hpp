@@ -12,8 +12,8 @@
 class ClientsManager {
 public:
 	struct Counter {
-		uint connections;
-		uint clients;
+		int connections;
+		int clients;
 	};
 
 	int tokenLength = 64;
@@ -115,6 +115,8 @@ public:
 		targetClient->setConnection(currentConnection);
 		remove(currentClient);
 		connectionToClient[currentConnection] = targetClient;
+		++countersFromIp[targetClient->getLastIP()].connections;
+
 		targetClient->onRevive();
 
 		return true;
@@ -133,10 +135,13 @@ private:
 	unordered_map<string, Counter> countersFromIp;
 	unordered_map<string, ClientPtr> tokenToClient;
 
-	void decrementForIp(string ip, uint Counter::*field) {
+	void decrementForIp(string ip, int Counter::*field) {
 		Counter &counter = countersFromIp[ip];
 
-		--(counter.*field);
+		if (--(counter.*field) < 0) {
+			counter.*field = 0;
+		}
+
 		if (counter.connections <= 0 && counter.clients <= 0) {
 			countersFromIp.erase(ip);
 		}
