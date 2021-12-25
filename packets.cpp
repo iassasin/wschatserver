@@ -328,6 +328,11 @@ void PacketAuth::process(Client &client) {
 
 			if (!token.empty()) {
 				if (ClientPtr targetClient = server->getClientByToken(token); targetClient) {
+					Logger::info(
+						client.getLastIP(), " reviving client ", targetClient->getLastIP(),
+						" [", targetClient->getID(), ", '", targetClient->getName(), "']"
+					);
+
 					user_id = targetClient->getID();
 					name = targetClient->getName();
 					token = targetClient->getToken();
