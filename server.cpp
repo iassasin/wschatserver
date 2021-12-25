@@ -44,7 +44,7 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 		}
 
 		if (counter.clients >= maxClientsFromIp) {
-			Logger::info("Orphan clients reached for ", ip, ", try to kill oldest orphan");
+			Logger::info("Orphan clients limit reached for ", ip, ", try to kill oldest orphan");
 
 			auto orphanCli = clientsManager.findFirstClient([&](ClientPtr c) {
 				return !c->getConnection() && c->getLastIP() == ip;
@@ -190,5 +190,12 @@ void Server::closeConnection(ConnectionPtr connection) {
 }
 
 bool Server::reviveClient(ClientPtr currentClient, ClientPtr targetClient) {
-	return clientsManager.reviveClient(currentClient, targetClient);
+	auto targetConnection = targetClient->getConnection();
+	auto result = clientsManager.reviveClient(currentClient, targetClient);
+
+	if (targetConnection) {
+		closeConnection(targetConnection);
+	}
+
+	return result;
 }

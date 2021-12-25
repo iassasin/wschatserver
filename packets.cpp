@@ -327,16 +327,15 @@ void PacketAuth::process(Client &client) {
 			};
 
 			if (!token.empty()) {
-				ClientPtr orphanClient = server->getClientByToken(token);
-				if (orphanClient && !orphanClient->getConnection()) {
-					user_id = orphanClient->getID();
-					name = orphanClient->getName();
-					token = orphanClient->getToken();
+				if (ClientPtr targetClient = server->getClientByToken(token); targetClient) {
+					user_id = targetClient->getID();
+					name = targetClient->getName();
+					token = targetClient->getToken();
 					// must be first packet after revive
 					client.sendPacket(*this);
 
-					if (!server->reviveClient(client.getSelfPtr(), orphanClient)) {
-						Logger::error("Something strange: orphan client can't be revived: ", client.getLastIP());
+					if (!server->reviveClient(client.getSelfPtr(), targetClient)) {
+						Logger::error("Something strange: target client can't be revived: ", client.getLastIP());
 					}
 					return;
 				}

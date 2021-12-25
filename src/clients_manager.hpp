@@ -18,7 +18,7 @@ public:
 
 	int tokenLength = 64;
 public:
-	ClientsManager(Server *srv) : server(srv) { }
+	explicit ClientsManager(Server *srv) : server(srv) { }
 
 	ClientPtr findClientByConnection(ConnectionPtr connection) {
 		if (auto clientIt = connectionToClient.find(connection); clientIt != connectionToClient.end()) {
@@ -94,13 +94,8 @@ public:
 			decrementForIp(ip, &Counter::connections);
 		}
 
-		for (auto it = clients.begin(); it != clients.end(); ++it) {
-			if (*it == client) {
-				clients.erase(it);
-				tokenToClient.erase(client->getToken());
-				decrementForIp(ip, &Counter::clients);
-				break;
-			}
+		if (removeFromClients(client)) {
+			decrementForIp(ip, &Counter::clients);
 		}
 
 		client->onRemove();
@@ -108,15 +103,23 @@ public:
 
 	bool reviveClient(ClientPtr currentClient, ClientPtr targetClient) {
 		auto currentConnection = currentClient->getConnection();
-		if (targetClient->getConnection() || !currentConnection) {
+		auto currentIp = currentClient->getLastIP();
+		auto targetConnection = targetClient->getConnection();
+		auto targetIp = targetClient->getLastIP();
+		if (!currentConnection) {
 			return false;
 		}
 
-		targetClient->setConnection(currentConnection);
-		remove(currentClient);
-		connectionToClient[currentConnection] = targetClient;
-		++countersFromIp[targetClient->getLastIP()].connections;
+		if (targetConnection && connectionToClient.erase(targetConnection)) {
+			decrementForIp(targetIp, &Counter::connections);
+		}
+		decrementForIp(targetIp, &Counter::clients);
 
+		removeFromClients(currentClient);
+		currentClient->onRemove();
+
+		connectionToClient[currentConnection] = targetClient;
+		targetClient->setConnection(currentConnection);
 		targetClient->onRevive();
 
 		return true;
@@ -145,6 +148,18 @@ private:
 		if (counter.connections <= 0 && counter.clients <= 0) {
 			countersFromIp.erase(ip);
 		}
+	}
+
+	bool removeFromClients(ClientPtr client) {
+		for (auto it = clients.begin(); it != clients.end(); ++it) {
+			if (*it == client) {
+				clients.erase(it);
+				tokenToClient.erase(client->getToken());
+				return true;
+			}
+		}
+
+		return false;
 	}
 };
 
