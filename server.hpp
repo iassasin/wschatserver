@@ -27,8 +27,8 @@ private:
 	int maxConnectionsFromIp = 5;
 	int maxClientsFromIp = 5;
 
-	ClientsManager clientsManager;
 	WSServer server;
+	ClientsManager clientsManager;
 	unordered_set<RoomPtr> rooms;
 
 	void closeConnection(ConnectionPtr connection);
