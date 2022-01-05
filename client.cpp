@@ -52,7 +52,9 @@ void Client::onRevive() {
 			sendRawData(s);
 		}
 
-		room->sendPacketToAll(PacketStatus(member, Member::Status::online));
+		if (!member->getNick().empty()) {
+			room->sendPacketToAll(PacketStatus(member, Member::Status::back));
+		}
 	}
 }
 
