@@ -3,14 +3,14 @@
 
 #include "client_fwd.hpp"
 #include "packet.hpp"
-#include "server.hpp"
+#include "server_fwd.hpp"
 #include "rooms_fwd.hpp"
 
 using namespace std;
 
 class Client {
 private:
-	shared_ptr<WSServerBase::Connection> connection;
+	ConnectionPtr connection;
 	Server *server;
 	set<RoomPtr> rooms;
 	weak_ptr<Client> self;
@@ -19,39 +19,43 @@ private:
 	uint uid;
 	bool _isGirl;
 	string color;
-	string clientIP;
-	SimpleWeb::CaseInsensitiveMultimap cookies;
+	string lastClientIP;
+	string token;
 public:
 	time_t lastPacketTime;
 	time_t lastMessageTime;
 	int messageCounter;
 
-	Client(Server *srv, shared_ptr<WSServerBase::Connection> conn);
+	Client(Server *srv, string token);
 	~Client();
 	
 	void setSelfPtr(weak_ptr<Client> wptr) { self = wptr; }
 	ClientPtr getSelfPtr() { return self.lock(); }
 
-	inline bool isGirl() { return _isGirl; }
-	inline void setGirl(bool g) { _isGirl = g; }
+	bool isGirl() { return _isGirl; }
+	void setGirl(bool g) { _isGirl = g; }
 
-	inline string getColor() { return color; }
-	inline void setColor(string clr) { color = clr; }
+	string getColor() { return color; }
+	void setColor(string clr) { color = clr; }
 
-	inline string getName() { return name; }
-	inline void setName(const string &nm) { name = nm; }
+	string getName() { return name; }
+	void setName(const string &nm) { name = nm; }
 	
-	inline string getIP() { return clientIP; }
-	inline const SimpleWeb::CaseInsensitiveMultimap &getCookies() { return cookies; }
+	string getLastIP() { return lastClientIP; }
+	string getToken() { return token; }
 
-	inline uint getID() { return uid; }
-	inline void setID(int id) { uid = id; }
+	uint getID() { return uid; }
+	void setID(int id) { uid = id; }
 	
-	inline Server *getServer() { return server; }
-	shared_ptr<WSServerBase::Connection> getConnection() { return connection; }
-	
+	Server *getServer() { return server; }
+
+	void setConnection(ConnectionPtr conn);
+	ConnectionPtr getConnection() { return connection; }
+
 	void onPacket(string pack);
+	void onRevive();
 	void onDisconnect();
+	void onRemove();
 	void onKick(RoomPtr room);
 	
 	MemberPtr joinRoom(RoomPtr room);

@@ -9,7 +9,6 @@
 #include <set>
 
 class Client;
-
 using ClientPtr = std::shared_ptr<Client>;
 
 #endif //WSSERVER_CLIENT_FWD_HPP

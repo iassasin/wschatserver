@@ -294,6 +294,7 @@ void PacketAuth::deserialize(const Json::Value &obj) {
 	api_key = obj["api_key"].asString();
 	name = obj["login"].asString();
 	password = obj["password"].asString();
+	token = obj["token"].asString();
 }
 
 Json::Value PacketAuth::serialize() const {
@@ -301,10 +302,13 @@ Json::Value PacketAuth::serialize() const {
 	obj["type"] = (int) type;
 	obj["user_id"] = user_id;
 	obj["name"] = name;
+	obj["token"] = token;
 	return obj;
 }
 
 void PacketAuth::process(Client &client) {
+	auto connection = client.getConnection();
+	auto server = client.getServer();
 	static vector<string> colors { "gray", "#f44", "dodgerblue", "aquamarine", "deeppink" };
 
 	try {
@@ -322,11 +326,30 @@ void PacketAuth::process(Client &client) {
 				client.setColor(colors[gid < (int) colors.size() ? gid : 2]);
 			};
 
-			if (!ukey.empty()) {
+			if (!token.empty()) {
+				if (ClientPtr targetClient = server->getClientByToken(token); targetClient) {
+					Logger::info(
+						client.getLastIP(), " reviving client ", targetClient->getLastIP(),
+						" [", targetClient->getID(), ", '", targetClient->getName(), "']"
+					);
+
+					user_id = targetClient->getID();
+					name = targetClient->getName();
+					token = targetClient->getToken();
+					// must be first packet after revive
+					client.sendPacket(*this);
+
+					if (!server->reviveClient(client.getSelfPtr(), targetClient)) {
+						Logger::error("Something strange: target client can't be revived: ", client.getLastIP());
+					}
+					return;
+				}
+			}
+			else if (!ukey.empty()) {
 				redis.get("chat-key-" + ukey, uid);
 			}
 			else if (!api_key.empty()) {
-				if (!gate.auth(client.getIP())) {
+				if (!gate.auth(client.getLastIP())) {
 					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
@@ -337,18 +360,25 @@ void PacketAuth::process(Client &client) {
 				auto rs = ps.executeQuery();
 				if (rs->next()) {
 					uid = rs->getInt(1);
-					gate.auth(client.getIP(), true);
+					gate.auth(client.getLastIP(), true);
 				}
 			}
 			else if (!name.empty() && !password.empty()) {
 				// placeholder
 			}
 			// http-header authentication
-			else if (auto sinidIt = client.getCookies().find("sinid"); sinidIt != client.getCookies().end()) {
-				Json::Value session;
-				if (redis.getJson("session:" + sinidIt->second, session)) {
-					if (session.isMember("user_id")) {
-						uid = std::stoi(session["user_id"].asString());
+			else {
+				SimpleWeb::CaseInsensitiveMultimap cookies;
+				if (auto cookie = connection->header.find("Cookie"); cookie != connection->header.end()) {
+					cookies = SimpleWeb::HttpHeader::FieldValue::SemicolonSeparatedAttributes::parse(cookie->second);
+				}
+
+				if (auto sinidIt = cookies.find("sinid"); sinidIt != cookies.end()) {
+					Json::Value session;
+					if (redis.getJson("session:" + sinidIt->second, session)) {
+						if (session.isMember("user_id")) {
+							uid = std::stoi(session["user_id"].asString());
+						}
 					}
 				}
 			}
@@ -363,7 +393,7 @@ void PacketAuth::process(Client &client) {
 				}
 			}
 			else if (!name.empty() && !password.empty()) {
-				if (!gate.auth(client.getIP())) {
+				if (!gate.auth(client.getLastIP())) {
 					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
@@ -375,7 +405,7 @@ void PacketAuth::process(Client &client) {
 				auto rs = ps.executeQuery();
 				if (rs->next()) {
 					initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
-					gate.auth(client.getIP(), true);
+					gate.auth(client.getLastIP(), true);
 				} else {
 					client.sendPacket(PacketError(type, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
 					return;
@@ -393,6 +423,7 @@ void PacketAuth::process(Client &client) {
 
 	user_id = client.getID();
 	name = client.getName();
+	token = client.getToken();
 	client.sendPacket(*this);
 }
 
@@ -571,10 +602,14 @@ void PacketJoin::process(Client &client) {
 
 		if (auto_login) {
 			auto info = room->getStoredMemberInfo(m);
-			if (info.user_id != 0) {
-				nick = info.nick;
-				m->setGirl(info.girl);
-				m->setColor(info.color);
+			if (info) {
+				nick = info->nick;
+				m->setGirl(info->girl);
+				m->setColor(info->color);
+			} else {
+				nick = client.getName();
+				m->setGirl(client.isGirl());
+				m->setColor(client.getColor());
 			}
 
 			if (!m->isModer()) {

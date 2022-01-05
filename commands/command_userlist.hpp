@@ -17,7 +17,8 @@ public:
 
 		for (auto m : room->getMembers()) {
 			auto mc = m->getClient();
-			users += "#" + to_string(m->getId()) + " " + m->getNick() + " (uid " + to_string(mc->getID()) + ", " + mc->getIP() + ")\n";
+			users += "#" + to_string(m->getId()) + " " + m->getNick() + " (uid " + to_string(mc->getID()) + ", " +
+					mc->getLastIP() + ")\n";
 		}
 
 		member->sendPacket(PacketSystem(room->getName(), users));

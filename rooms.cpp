@@ -2,7 +2,6 @@
 #include "packets.hpp"
 #include "config.hpp"
 #include "src/exceptions.hpp"
-#include <ctime>
 
 MemberInfo::MemberInfo() {
 	user_id = 0;
@@ -66,7 +65,7 @@ void Member::setNick(const string &nnick) {
 	roomp->sendPacketToAll(spack);
 
 	if (!nick.empty()) {
-		Logger::info(roomp->getName(), ": Login = ", nick, " (", client->getIP(), ")");
+		Logger::info(roomp->getName(), ": Login = ", nick, " (", client->getLastIP(), ")");
 	}
 }
 
@@ -229,8 +228,8 @@ MemberPtr Room::addMember(ClientPtr user) {
 	m->id = genNextMemberId();
 
 	if (!m->isModer()) {
-		if (bannedIps.find(user->getIP()) != bannedIps.end()) {
-			throw BannedByIPException("IP " + user->getIP() + " is banned");
+		if (bannedIps.find(user->getLastIP()) != bannedIps.end()) {
+			throw BannedByIPException("IP " + user->getLastIP() + " is banned");
 		}
 		else if (bannedUids.find(user->getID()) != bannedUids.end()) {
 			throw BannedByIDException("User id " + std::to_string(user->getID()) + " is banned");
@@ -260,15 +259,15 @@ bool Room::removeMember(ClientPtr user) {
 	return members.erase(m) > 0;
 }
 
-MemberInfo Room::getStoredMemberInfo(MemberPtr member) {
+std::optional<MemberInfo> Room::getStoredMemberInfo(MemberPtr member) {
 	uint uid = member->getClient()->getID();
 	if (uid == 0) {
-		return MemberInfo();
+		return std::nullopt;
 	}
 
 	auto mi = membersInfo.find(uid);
 	if (mi == membersInfo.end()) {
-		return MemberInfo();
+		return std::nullopt;
 	}
 
 	return mi->second;

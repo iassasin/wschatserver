@@ -45,7 +45,7 @@ int main() {
 		return 1;
 	}
 
-	server = std::make_shared<Server>(config["port"].asInt());
+	server = std::make_shared<Server>(config);
 
 	try {
 		Json::Value val;

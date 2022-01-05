@@ -119,6 +119,7 @@ public:
 	uint user_id;
 	string name;
 	string password;
+	string token;
 	
 	PacketAuth();
 	virtual ~PacketAuth();

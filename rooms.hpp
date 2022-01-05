@@ -10,6 +10,7 @@
 #include <map>
 #include <list>
 #include <ctime>
+#include <optional>
 #include <jsoncpp/json/json.h>
 
 #include "server.hpp"
@@ -48,6 +49,7 @@ public:
 		back,
 		typing,
 		stop_typing,
+		orphan,
 	};
 private:
 	friend class Room;
@@ -178,7 +180,7 @@ public:
 	MemberPtr findMemberByNick(string nick);
 	MemberPtr findMemberById(uint id);
 
-	MemberInfo getStoredMemberInfo(MemberPtr member);
+	std::optional<MemberInfo> getStoredMemberInfo(MemberPtr member);
 
 	bool kickMember(ClientPtr user, string reason = "");
 	bool kickMember(MemberPtr member, string reason = "");
