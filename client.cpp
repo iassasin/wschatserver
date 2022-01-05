@@ -44,6 +44,8 @@ void Client::onRevive() {
 	for (RoomPtr room : rooms) {
 		auto member = room->findMemberByClient(ptr);
 
+		member->setStatus(Member::Status::online);
+
 		sendPacket(PacketJoin(member, {}));
 		sendPacket(PacketOnlineList(room, {}));
 
@@ -64,6 +66,7 @@ void Client::onDisconnect() {
 	auto ptr = self.lock();
 	for (RoomPtr room : rooms) {
 		auto member = room->findMemberByClient(ptr);
+		member->setStatus(Member::Status::orphan);
 		room->sendPacketToAll(PacketStatus(member, Member::Status::orphan));
 	}
 }
