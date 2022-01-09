@@ -17,7 +17,7 @@ public:
 		string res = "Подключения:\n";
 		for (auto c : server->getClientsCounters()) {
 			res += c.first
-					+ " - (cli: " + to_string(c.second.clients) + ", conn: " + to_string(c.second.connections) + "\n";
+					+ " - (cli: " + to_string(c.second.clients) + ", conn: " + to_string(c.second.connections) + ")\n";
 		}
 
 		member->sendPacket(PacketSystem(room->getName(), res));

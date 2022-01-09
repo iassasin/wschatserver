@@ -190,11 +190,16 @@ void Server::closeConnection(ConnectionPtr connection) {
 }
 
 bool Server::reviveClient(ClientPtr currentClient, ClientPtr targetClient) {
+	auto currentConnection = currentClient->getConnection();
 	auto targetConnection = targetClient->getConnection();
 	auto result = clientsManager.reviveClient(currentClient, targetClient);
 
 	if (targetConnection) {
-		closeConnection(targetConnection);
+		if (currentConnection != targetConnection) {
+			closeConnection(targetConnection);
+		} else {
+			Logger::error("Somehow reviving client with identical connections! currentClient == targetClient => ", currentClient == targetClient ? "true" : "false");
+		}
 	}
 
 	return result;

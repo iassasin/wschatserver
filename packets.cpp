@@ -327,7 +327,8 @@ void PacketAuth::process(Client &client) {
 			};
 
 			if (!token.empty()) {
-				if (ClientPtr targetClient = server->getClientByToken(token); targetClient) {
+				auto clientPtr = client.getSelfPtr();
+				if (ClientPtr targetClient = server->getClientByToken(token); targetClient && targetClient != clientPtr) {
 					Logger::info(
 						client.getLastIP(), " reviving client ", targetClient->getLastIP(),
 						" [", targetClient->getID(), ", '", targetClient->getName(), "']"
@@ -339,7 +340,7 @@ void PacketAuth::process(Client &client) {
 					// must be first packet after revive
 					client.sendPacket(*this);
 
-					if (!server->reviveClient(client.getSelfPtr(), targetClient)) {
+					if (!server->reviveClient(clientPtr, targetClient)) {
 						Logger::error("Something strange: target client can't be revived: ", client.getLastIP());
 					}
 					return;
