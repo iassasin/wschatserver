@@ -40,6 +40,7 @@ void Client::onPacket(string msg) {
 }
 
 void Client::onRevive() {
+	lastPacketTime = time(nullptr);
 	auto ptr = self.lock();
 	for (RoomPtr room : rooms) {
 		auto member = room->findMemberByClient(ptr);
