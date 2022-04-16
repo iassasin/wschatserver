@@ -16,7 +16,7 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 	server.config.thread_pool_size = 1;
 
 	auto& chat = server.endpoint["^/chat/?$"];
-	
+
 	chat.on_message = [&](ConnectionPtr connection, shared_ptr<InMessage> message) {
 		string msg = message->string();
 		try {
@@ -29,7 +29,7 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 			Logger::error("Unknown error while processing message:", msg);
 		}
 	};
-	
+
 	chat.on_open = [&, this](ConnectionPtr connection) {
 		auto ip = getRealClientIp(connection);
 
@@ -58,20 +58,25 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 
 		clientsManager.connect(connection);
 	};
-	
+
 	chat.on_close = [&](ConnectionPtr connection, int status, const string& reason) {
 		auto ip = getRealClientIp(connection);
 	    Logger::info("Closed connection from ", ip, " with status code ", status);
 
-	    clientsManager.disconnect(connection);
+		// normal close or browser page close
+		if (status == 1000 || status == 1001) {
+			clientsManager.remove(connection);
+		} else {
+	    	clientsManager.makeOrphan(connection);
+		}
 	};
-	
+
 	chat.on_error = [&](auto connection, const boost::system::error_code& ec) {
 		auto ip = getRealClientIp(connection);
 		Logger::warn("Error in connection from ", ip,
 				". Error: ", ec, ", error message: ", ec.message());
 
-	    clientsManager.disconnect(connection);
+	    clientsManager.makeOrphan(connection);
 	};
 
 	server.runWithInterval(pingInterval, [&]{
@@ -86,7 +91,7 @@ Server::Server(const Config &config) : server(), clientsManager(this)
 			else if (timeWasted > connectTimeout) {
 				if (auto connection = cli->getConnection(); connection) {
 					closeConnection(connection);
-					clientsManager.disconnect(cli);
+					clientsManager.makeOrphan(cli);
 					Logger::info("Orphaned connection (no ping): ", cli->getName(), " [", cli->getLastIP(), "]");
 				}
 			}

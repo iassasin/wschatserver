@@ -68,22 +68,31 @@ public:
 		++counter.connections;
 	}
 
-	bool disconnect(ConnectionPtr connection) {
+	bool makeOrphan(ConnectionPtr connection) {
 		if (auto client = findClientByConnection(connection); client) {
-			disconnect(client);
+			makeOrphan(client);
 			return true;
 		}
 
 		return false;
 	}
 
-	void disconnect(ClientPtr client) {
+	void makeOrphan(ClientPtr client) {
 		auto connection = client->getConnection();
 		if (connection && connectionToClient.erase(connection)) {
 			auto ip = client->getLastIP();
 			decrementForIp(ip, &Counter::connections);
 			client->onDisconnect();
 		}
+	}
+
+	bool remove(ConnectionPtr connection) {
+		if (auto client = findClientByConnection(connection); client) {
+			remove(client);
+			return true;
+		}
+
+		return false;
 	}
 
 	void remove(ClientPtr client) {
