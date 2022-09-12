@@ -12,7 +12,7 @@
 class CommandNick : public Command {
 public:
 	virtual void process(MemberPtr member, regex_parser &parser) override {
-		static regex r_login("^([a-zA-Z0-9\\-_ ]|" REGEX_ANY_RUSSIAN "){1,24}$");
+		static regex r_login("^([a-zA-Z0-9\\-_\\. ]|" REGEX_ANY_RUSSIAN "){1,24}$");
 		static regex r_startSpaces("^\\s+");
 		static regex r_endSpaces("\\s+$");
 		static regex r_longSpaces("\\s{2,}");
@@ -35,7 +35,7 @@ public:
 				member->setNick(nick);
 			}
 		} else {
-			syspack.message = "Ник должен содержать только латинские буквоцифры и _-, пробелы и не длинее 24 символов";
+			syspack.message = "Ник должен содержать только латинские буквоцифры, символы '._-', пробелы и не длинее 24 символов";
 			member->sendPacket(syspack);
 		}
 	}
