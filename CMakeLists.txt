@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 project(wsserver)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Debug)
 	set(CMAKE_CXX_FLAGS "-flto ${CMAKE_CXX_FLAGS}")
@@ -9,7 +10,10 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Debug)
 endif ()
 
 include_directories(redisclient/src)
+
+# weird hacks for compiler incompatibilities
 include_directories(mysql_cppconn)
+include_directories(pqxx)
 
 set(SOURCE_FILES
 		simple_wss/server_ws.hpp
@@ -51,6 +55,8 @@ set(SOURCE_FILES
 		src/exceptions.hpp src/clients_manager.hpp server_fwd.hpp)
 
 find_package(Boost COMPONENTS system regex REQUIRED)
+find_library(PQXX pqxx)
+find_library(PQ pq)
 find_library(MYSQLCPPCONN mysqlcppconn)
 find_library(CRYPTO crypto)
 find_library(JSONCPP jsoncpp)
@@ -58,3 +64,4 @@ find_library(SSL ssl)
 
 add_executable(wsserver ${SOURCE_FILES})
 target_link_libraries(wsserver pthread Boost::system Boost::regex ${MYSQLCPPCONN} ${CRYPTO} ${JSONCPP} ${SSL})
+target_link_libraries(wsserver pthread Boost::system Boost::regex ${MYSQLCPPCONN} ${PQXX} ${PQ} ${CRYPTO} ${JSONCPP} ${SSL})

@@ -355,12 +355,9 @@ void PacketAuth::process(Client &client) {
 					return;
 				}
 
-				auto ps = db.prepare("SELECT user_id FROM api_keys WHERE `key` = ?");
-				ps->setString(1, api_key);
-
-				auto rs = ps.executeQuery();
-				if (rs->next()) {
-					uid = rs->getInt(1);
+				auto uidOpt = db.getUserIdByApiKey(api_key);
+				if (uidOpt) {
+					uid = *uidOpt;
 					gate.auth(client.getLastIP(), true);
 				}
 			}
@@ -385,12 +382,9 @@ void PacketAuth::process(Client &client) {
 			}
 
 			if (uid != 0) {
-				auto ps = db.prepare("SELECT login, gid FROM users WHERE id = ?");
-				ps->setInt(1, uid);
-
-				auto rs = ps.executeQuery();
-				if (rs->next()) {
-					initUser(uid, rs->getInt(2), rs->getString(1));
+				auto userInfoOpt = db.getUserByUid(uid);
+				if (userInfoOpt) {
+					initUser(uid, userInfoOpt->gid, userInfoOpt->login);
 				}
 			}
 			else if (!name.empty() && !password.empty()) {
@@ -399,21 +393,17 @@ void PacketAuth::process(Client &client) {
 					return;
 				}
 
-				auto ps = db.prepare("SELECT id, login, gid FROM users WHERE login = ? AND pass = MD5(?)");
-				ps->setString(1, name);
-				ps->setString(2, password);
-
-				auto rs = ps.executeQuery();
-				if (rs->next()) {
-					initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
+				auto userInfoOpt = db.getUserByLoginAndPassword(name, password);
+				if (userInfoOpt) {
+					initUser(userInfoOpt->uid, userInfoOpt->gid, userInfoOpt->login);
 					gate.auth(client.getLastIP(), true);
 				} else {
 					client.sendPacket(PacketError(type, sequenceId, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
 					return;
 				}
 			}
-		} catch (SQLException &e) {
-			Logger::error("[auth] SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
+		} catch (DbException &e) {
+			Logger::error("[auth] ", e.what());
 			db.reconnect();
 			client.sendPacket(PacketError(type, sequenceId, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
 			return;

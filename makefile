@@ -1,8 +1,9 @@
 CC = g++
 
 INCLUDES = -I./redisclient/src -I./mysql_cppconn
-CPPFLAGS = -Wall -O3 -std=c++17 -flto $(INCLUDES)
-LDLIBS = -lpthread -lboost_system -lcrypto -lmysqlcppconn -ljsoncpp -lssl
+CPPFLAGS = -Wall -O3 -std=c++20 -flto $(INCLUDES)
+LDLIBS_SHARED = -lpthread -lcrypto -lmysqlcppconn -ljsoncpp -lssl -lpqxx -lpq
+LDLIBS = $(LDLIBS_SHARED) -lboost_system
 
 SOURCES = $(wildcard *.cpp) $(wildcard regex/*.cpp)
 OBJECTS = $(SOURCES:%.cpp=%.o)
@@ -16,11 +17,11 @@ all: $(APP)
 static: $(APP)-static
 	strip $(APP)
 
-static_boost: LDLIBS = -lpthread -Wl,-Bstatic -lboost_system -Wl,-Bdynamic -lcrypto -lmysqlcppconn -ljsoncpp -lssl
+static_boost: LDLIBS = -Wl,-Bstatic -lboost_system -Wl,-Bdynamic $(LDLIBS_SHARED)
 static_boost: $(APP)
 	strip $(APP)
 
-debug: CPPFLAGS = -D_DEBUG_ -Wall -g3 -std=c++17 $(INCLUDES)
+debug: CPPFLAGS = -D_DEBUG_ -Wall -g3 -std=c++20 $(INCLUDES)
 debug: $(OBJECTS)
 	$(LINK.o) $^ $(LDLIBS) -o $(APP)
 
@@ -28,8 +29,9 @@ clean:
 	rm -f $(APP) $(OBJECTS)
 
 # Disable -flto for static build, because mysql exceptions cause sigsegv in core lib
-$(APP)-static: LDLIBS = -lpthread -lboost_system -lcrypto -ljsoncpp -lssl -lmysqlcppconn $(shell pkg-config --libs --static mysqlclient)
-$(APP)-static: CPPFLAGS = -Wall -O3 -std=c++17 $(INCLUDES)
+# static linking just doesn't work because maintainers always forgetting to include static libs in deb-packages
+$(APP)-static: LDLIBS = $(LDLIBS_SHARED) $(shell pkg-config --libs --static mysqlclient) $(shell pkg-config --libs --static libpq)
+$(APP)-static: CPPFLAGS = -Wall -O3 -std=c++20 $(INCLUDES)
 $(APP)-static: $(OBJECTS)
 	$(LINK.o) -static $^ $(LDLIBS) -o $(APP)
 

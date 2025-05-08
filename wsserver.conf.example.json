@@ -7,11 +7,21 @@
 		"port": 6379
 	},
 
-	"database": {
+	"useDatabase": "mysql|postgres",
+
+	"databaseMysql": {
 		"host": "tcp://localhost:3306",
 		"user": "user",
 		"password": "pass",
 		"db": "chat",
 		"charset": "utf8"
+	},
+
+	"databasePostgres": {
+		"host": "tcp://localhost:3306",
+		"port": 5432,
+		"user": "user",
+		"password": "pass",
+		"db": "chat"
 	}
 }
