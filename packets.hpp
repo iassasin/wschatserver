@@ -30,10 +30,14 @@ public:
 	string info;
 
 	PacketError() { type = Type::error; }
-	PacketError(Type src, const string &targ, Code cod, const string &inf = "")
-			: source(src), target(targ), code(cod), info(inf) { type = Type::error; }
-	PacketError(Type src, Code cod, const string &inf = "") : PacketError(src, "", cod, inf) {}
-	PacketError(Code cod, const string &inf = "") : PacketError(Type::error, cod, inf) {}
+	PacketError(Type src, optional<uint32_t> sequenceId, const string &targ, Code cod, const string &inf = "")
+			: source(src), target(targ), code(cod), info(inf)
+	{
+		type = Type::error;
+		this->sequenceId = sequenceId;
+	}
+	PacketError(Type src, optional<uint32_t> sequenceId, Code cod, const string &inf = "") : PacketError(src, sequenceId, "", cod, inf) {}
+	PacketError(Code cod, optional<uint32_t> sequenceId, const string &inf = "") : PacketError(Type::error, sequenceId, cod, inf) {}
 
 	Json::Value serialize() const override;
 	void process(Client &) override;

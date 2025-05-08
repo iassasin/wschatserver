@@ -270,7 +270,7 @@ Json::Value PacketOnlineList::serialize() const {
 void PacketOnlineList::process(Client &client) {
 	auto room = client.getRoomByName(target);
 	if (!room) {
-		client.sendPacket(PacketError(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\""));
+		client.sendPacket(PacketError(type, sequenceId, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\""));
 		return;
 	}
 
@@ -351,7 +351,7 @@ void PacketAuth::process(Client &client) {
 			}
 			else if (!api_key.empty()) {
 				if (!gate.auth(client.getLastIP())) {
-					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
+					client.sendPacket(PacketError(type, sequenceId, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
 
@@ -395,7 +395,7 @@ void PacketAuth::process(Client &client) {
 			}
 			else if (!name.empty() && !password.empty()) {
 				if (!gate.auth(client.getLastIP())) {
-					client.sendPacket(PacketError(type, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
+					client.sendPacket(PacketError(type, sequenceId, PacketError::Code::access_denied, "Слишком частые попытки авторизации! Попробуйте позже."));
 					return;
 				}
 
@@ -408,14 +408,14 @@ void PacketAuth::process(Client &client) {
 					initUser(rs->getInt(1), rs->getInt(3), rs->getString(2));
 					gate.auth(client.getLastIP(), true);
 				} else {
-					client.sendPacket(PacketError(type, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
+					client.sendPacket(PacketError(type, sequenceId, PacketError::Code::incorrect_loginpass, "Неверный логин/пароль!"));
 					return;
 				}
 			}
 		} catch (SQLException &e) {
 			Logger::error("[auth] SQLException code ", e.getErrorCode(), ", SQLState: ", e.getSQLState(), "\n", e.what());
 			db.reconnect();
-			client.sendPacket(PacketError(type, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
+			client.sendPacket(PacketError(type, sequenceId, PacketError::Code::database_error, "Ошибка подключения к БД при авторизации!"));
 			return;
 		}
 	} catch (const std::exception &e) {
@@ -554,9 +554,7 @@ Json::Value PacketJoin::serialize() const {
 
 void PacketJoin::process(Client &client) {
 	if (client.getRoomByName(target)) {
-		PacketError error(type, target, PacketError::Code::already_connected, "Вы уже подключены к комнате \"" + target + "\"");
-		error.sequenceId = sequenceId;
-
+		PacketError error(type, sequenceId, target, PacketError::Code::already_connected, "Вы уже подключены к комнате \"" + target + "\"");
 		client.sendPacket(error);
 		return;
 	}
@@ -564,9 +562,7 @@ void PacketJoin::process(Client &client) {
 	auto server = client.getServer();
 	auto room = server->getRoomByName(target);
 	if (!room) {
-		PacketError error(type, target, PacketError::Code::not_found, "Комнаты \"" + target + "\" не существует");
-		error.sequenceId = sequenceId;
-
+		PacketError error(type, sequenceId, target, PacketError::Code::not_found, "Комнаты \"" + target + "\" не существует");
 		client.sendPacket(error);
 		return;
 	}
@@ -576,16 +572,14 @@ void PacketJoin::process(Client &client) {
 	try {
 		m = client.joinRoom(room);
 	} catch (BannedByIPException &ex) {
-		PacketError pack(Packet::Type::join, room->getName(), PacketError::Code::user_banned, "Вы были забанены");
-		pack.sequenceId = sequenceId;
+		PacketError pack(Packet::Type::join, sequenceId, room->getName(), PacketError::Code::user_banned, "Вы были забанены");
 		client.sendPacket(pack);
 	} catch (BannedByIDException &ex) {
-		PacketError pack(Packet::Type::join, room->getName(), PacketError::Code::user_banned,
+		PacketError pack(Packet::Type::join, sequenceId, room->getName(), PacketError::Code::user_banned,
 					client.getID() == 0
 					? "Гости не могут войти в эту комнату. Авторизуйтесь на сайте"
 					: "Вы были забанены"
 			);
-		pack.sequenceId = sequenceId;
 		client.sendPacket(pack);
 	}
 
@@ -668,8 +662,7 @@ Json::Value PacketLeave::serialize() const {
 void PacketLeave::process(Client &client) {
 	auto room = client.getRoomByName(target);
 	if (!room) {
-		PacketError pack(type, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\"");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::not_found, "Вы не подключены к комнате \"" + target + "\"");
 		client.sendPacket(pack);
 		return;
 	}
@@ -707,15 +700,13 @@ Json::Value PacketCreateRoom::serialize() const {
 
 void PacketCreateRoom::process(Client &client) {
 	if (client.isGuest()) {
-		PacketError pack(type, target, PacketError::Code::access_denied, "Гости не могут создавать комнаты");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::access_denied, "Гости не могут создавать комнаты");
 		client.sendPacket(pack);
 		return;
 	}
 
 	if (!regex_match(target, regex(R"(#[a-zA-Z\d\-_ \[\]\(\)]{3,24})"))) {
-		PacketError pack(type, target, PacketError::Code::invalid_target, "Недопустимое имя комнаты");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::invalid_target, "Недопустимое имя комнаты");
 		client.sendPacket(pack);
 		return;
 	}
@@ -723,8 +714,7 @@ void PacketCreateRoom::process(Client &client) {
 	auto server = client.getServer();
 	auto room = server->createRoom(target);
 	if (!room) {
-		PacketError pack(type, target, PacketError::Code::already_exists, "Такая комната уже существует");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::already_exists, "Такая комната уже существует");
 		client.sendPacket(pack);
 		return;
 	}
@@ -762,8 +752,7 @@ Json::Value PacketRemoveRoom::serialize() const {
 
 void PacketRemoveRoom::process(Client &client) {
 	if (client.isGuest()) {
-		PacketError pack(type, target, PacketError::Code::access_denied, "Гости не могут удалять комнаты");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::access_denied, "Гости не могут удалять комнаты");
 		client.sendPacket(pack);
 		return;
 	}
@@ -772,8 +761,7 @@ void PacketRemoveRoom::process(Client &client) {
 	auto room = server->getRoomByName(target);
 
 	if (!room) {
-		PacketError pack(type, target, PacketError::Code::not_found, "Такая комната не существует");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::not_found, "Такая комната не существует");
 		client.sendPacket(pack);
 		return;
 	}
@@ -782,8 +770,7 @@ void PacketRemoveRoom::process(Client &client) {
 		server->removeRoom(target);
 		client.sendPacket(*this);
 	} else {
-		PacketError pack(type, target, PacketError::Code::access_denied, "Вы не можете удалить эту комнату");
-		pack.sequenceId = sequenceId;
+		PacketError pack(type, sequenceId, target, PacketError::Code::access_denied, "Вы не можете удалить эту комнату");
 		client.sendPacket(pack);
 		return;
 	}
