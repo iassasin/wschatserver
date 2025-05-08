@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
 project(wsserver)
 
-set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Debug)
@@ -63,5 +62,4 @@ find_library(JSONCPP jsoncpp)
 find_library(SSL ssl)
 
 add_executable(wsserver ${SOURCE_FILES})
-target_link_libraries(wsserver pthread Boost::system Boost::regex ${MYSQLCPPCONN} ${CRYPTO} ${JSONCPP} ${SSL})
 target_link_libraries(wsserver pthread Boost::system Boost::regex ${MYSQLCPPCONN} ${PQXX} ${PQ} ${CRYPTO} ${JSONCPP} ${SSL})
